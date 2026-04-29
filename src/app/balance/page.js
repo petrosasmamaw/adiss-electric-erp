@@ -128,13 +128,13 @@ export default function BalancePage() {
     <section className="space-y-8">
       <SectionHeader subtitle={t("common.finance")} title={t("balance.title")} />
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <StatCard label={t("common.balance")} value={asCurrency(financeSummary.balance)} icon="Balance" color="emerald" />
+      <div className="grid auto-rows-fr gap-3 md:grid-cols-2 lg:grid-cols-5">
+        <StatCard label={t("common.balance")} value={asCurrency(financeSummary.balance)} icon="Balance" color="emerald" size="compact" />
         <div className="cursor-pointer" onClick={() => setShowSupplierCredits((prev) => !prev)}>
-          <StatCard label={t("common.credit")} value={asCurrency(financeSummary.credit)} icon="Credit" color="amber" />
+          <StatCard label={t("common.credit")} value={asCurrency(financeSummary.credit)} icon="Credit" color="amber" size="compact" />
         </div>
-        <StatCard label={t("dashboard.profit")} value={asCurrency(financeSummary.profit)} icon="Profit" color="purple" />
-        <StatCard label={t("balance.stockValue")} value={asCurrency(financeSummary.stockValue)} icon="Stock" color="blue" />
+        <StatCard label={t("dashboard.profit")} value={asCurrency(financeSummary.profit)} icon="Profit" color="purple" size="compact" />
+        <StatCard label={t("balance.stockValue")} value={asCurrency(financeSummary.stockValue)} icon="Stock" color="blue" size="compact" />
         <StatCard
           label={t("balance.netPosition")}
           value={asCurrency(
@@ -144,6 +144,7 @@ export default function BalancePage() {
           )}
           icon="Net"
           color="cyan"
+          size="compact"
         />
       </div>
 

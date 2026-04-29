@@ -234,18 +234,22 @@ async function buyProduct(req, res) {
 
     const product = rows[0];
     const unitPrice = parseNumeric(priceRaw, parseNumeric(product.default_price, 0));
-    const paymentSource = String(paymentSourceRaw || "credit").trim().toLowerCase();
+    const paymentSourceInput = String(paymentSourceRaw || "credit").trim().toLowerCase();
+    const paymentSource = paymentSourceInput === "balance" ? "bank" : paymentSourceInput;
     const supplierName = String(supplierNameRaw || "").trim();
 
-    if (paymentSource !== "balance" && paymentSource !== "credit") {
+    if (paymentSource !== "bank" && paymentSource !== "credit") {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "payment_source must be balance or credit" });
+      return res.status(400).json({ error: "payment_source must be credit or bank" });
     }
 
     if (paymentSource === "credit" && !supplierName) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "supplier_name is required for credit purchase" });
     }
+
+    const financeAccountType = paymentSource === "credit" ? "credit" : "balance";
+    const financeDirection = paymentSource === "credit" ? "in" : "out";
 
     const currentIds = normalizeStoredIds(product.ids, parseNumeric(product.default_price, 0));
     const trackedBuyIds = normalizeIncomingIds(idsRaw, unitPrice);
@@ -271,25 +275,42 @@ async function buyProduct(req, res) {
       return res.status(400).json({ error: "Tracked products must be bought with IDs" });
     }
 
+    async function applyBuyFinanceEntry(amount, note) {
+      try {
+        await applyFinanceEntry(client, {
+          accountType: financeAccountType,
+          direction: financeDirection,
+          amount,
+          supplierName: paymentSource === "credit" ? supplierName : null,
+          note,
+          source: paymentSource === "credit" ? "buy-credit" : "buy-bank",
+          referenceType: "product",
+          referenceId: productId,
+        });
+      } catch (error) {
+        if (
+          paymentSource === "bank" &&
+          /insufficient balance/i.test(String(error?.message || ""))
+        ) {
+          throw new Error("Your balance is low. Use credit.");
+        }
+
+        throw error;
+      }
+    }
+
     if (trackedBuyIds.length > 0) {
       const newIds = [...currentIds, ...uniqueIncoming];
       const purchasedCount = uniqueIncoming.length;
       const newStock = product.stock + purchasedCount;
       const purchaseAmount = unitPrice * purchasedCount;
 
-      await applyFinanceEntry(client, {
-        accountType: paymentSource,
-        direction: paymentSource === "balance" ? "out" : "in",
-        amount: purchaseAmount,
-        supplierName: paymentSource === "credit" ? supplierName : null,
-        note:
-          paymentSource === "credit"
-            ? `Buy tracked IDs for product #${productId} on credit from ${supplierName}`
-            : `Buy tracked IDs for product #${productId}`,
-        source: paymentSource === "balance" ? "buy-balance" : "buy-credit",
-        referenceType: "product",
-        referenceId: productId,
-      });
+      await applyBuyFinanceEntry(
+        purchaseAmount,
+        paymentSource === "credit"
+          ? `Buy tracked IDs for product #${productId} on credit from ${supplierName}`
+          : `Buy tracked IDs for product #${productId} via bank`
+      );
 
       await client.query(
         `UPDATE products SET stock = $1, ids = $2::jsonb, updated_at = NOW() WHERE id = $3`,
@@ -326,19 +347,12 @@ async function buyProduct(req, res) {
     const newStock = product.stock + quantity;
     const purchaseAmount = unitPrice * quantity;
 
-    await applyFinanceEntry(client, {
-      accountType: paymentSource,
-      direction: paymentSource === "balance" ? "out" : "in",
-      amount: purchaseAmount,
-      supplierName: paymentSource === "credit" ? supplierName : null,
-      note:
-        paymentSource === "credit"
-          ? `Buy quantity for product #${productId} on credit from ${supplierName}`
-          : `Buy quantity for product #${productId}`,
-      source: paymentSource === "balance" ? "buy-balance" : "buy-credit",
-      referenceType: "product",
-      referenceId: productId,
-    });
+    await applyBuyFinanceEntry(
+      purchaseAmount,
+      paymentSource === "credit"
+        ? `Buy quantity for product #${productId} on credit from ${supplierName}`
+        : `Buy quantity for product #${productId} via bank`
+    );
 
     await client.query(
       `UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2`,
@@ -361,8 +375,13 @@ async function buyProduct(req, res) {
     await client.query("COMMIT");
 
     return res.json({ ok: true });
-  } catch (_error) {
+  } catch (error) {
     await client.query("ROLLBACK");
+    const message = String(error?.message || "").trim();
+    if (message) {
+      return res.status(400).json({ error: message });
+    }
+
     return res.status(500).json({ error: "Failed to process buy" });
   } finally {
     client.release();

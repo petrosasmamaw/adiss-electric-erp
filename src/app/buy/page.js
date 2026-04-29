@@ -62,12 +62,22 @@ export default function BuyPage() {
           payment_source: paymentSource,
           supplier_name: paymentSource === "credit" ? supplierName.trim() : undefined,
         };
+    const purchaseAmount = totalPrice * units;
 
-    await dispatch(buyProduct({ productId: selectedId, payload }));
-    setQuantity("1");
-    setIdsText("");
-    setPrice("");
-    setSupplierName("");
+    if (paymentSource === "bank" && Number(financeSummary.balance || 0) < purchaseAmount) {
+      alert("Your balance is low. Use credit.");
+      return;
+    }
+
+    try {
+      await dispatch(buyProduct({ productId: selectedId, payload })).unwrap();
+      setQuantity("1");
+      setIdsText("");
+      setPrice("");
+      setSupplierName("");
+    } catch (error) {
+      alert(error?.message || "Failed to process buy");
+    }
   }
 
   return (
@@ -141,7 +151,6 @@ export default function BuyPage() {
                 className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
                 <option value="credit">{t("buy.credit")}</option>
-                <option value="cash">{t("buy.cash")}</option>
                 <option value="bank">{t("buy.bank")}</option>
               </select>
             </div>
