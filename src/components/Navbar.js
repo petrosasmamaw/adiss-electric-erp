@@ -3,8 +3,6 @@
 import { useState } from "react";
 
 export default function Navbar({ t, language, setLanguage, onMenuClick }) {
-  const [showLangMenu, setShowLangMenu] = useState(false);
-
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-6">
@@ -33,39 +31,17 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
           </div>
         </div>
 
-        {/* Right: Language + User */}
+        {/* Right: Language Toggle + User */}
         <div className="flex items-center gap-3">
-          {/* Language Switcher */}
-          <div className="relative">
-            <button
-              onClick={() => setShowLangMenu(!showLangMenu)}
-              className="px-3 py-2 rounded-lg hover:bg-slate-100 transition text-sm font-medium"
-            >
-              {language === "en" ? "🇺🇸 EN" : "🇪🇹 AM"}
-            </button>
-            {showLangMenu && (
-              <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-200 rounded-lg shadow-lg z-50">
-                <button
-                  onClick={() => {
-                    setLanguage("en");
-                    setShowLangMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm"
-                >
-                  🇺🇸 English
-                </button>
-                <button
-                  onClick={() => {
-                    setLanguage("am");
-                    setShowLangMenu(false);
-                  }}
-                  className="w-full text-left px-4 py-2 hover:bg-slate-50 text-sm border-t border-slate-100"
-                >
-                  🇪🇹 Amharic
-                </button>
-              </div>
-            )}
-          </div>
+          {/* Language Toggle Button */}
+          <button
+            onClick={() => setLanguage(language === "en" ? "amh" : "en")}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition font-medium text-sm text-slate-700"
+            title={language === "en" ? "Switch to Amharic" : "Switch to English"}
+          >
+            <span>{language === "en" ? "🇺🇸" : "🇪🇹"}</span>
+            <span>{language === "en" ? "EN" : "AM"}</span>
+          </button>
 
           {/* User Avatar */}
           <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
