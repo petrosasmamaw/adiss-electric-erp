@@ -1,109 +1,47 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import Sidebar from "./Sidebar";
+import Navbar from "./Navbar";
 
 export default function AppShell({ children }) {
-  const pathname = usePathname();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { language, setLanguage, t } = useLanguage();
 
-  const links = [
-    { href: "/dashboard", label: t("nav.dashboard") },
-    { href: "/store", label: t("nav.store") },
-    { href: "/buy", label: t("nav.buy") },
-    { href: "/sell", label: t("nav.sell") },
-    { href: "/balance", label: t("nav.balance") },
-    { href: "/reports", label: t("nav.reports") },
-  ];
-
-  const isActive = (href) => {
-    if (href === "/") {
-      return pathname === "/";
-    }
-    return pathname === href || pathname.startsWith(`${href}/`);
-  };
-
   return (
-    <div className="relative min-h-screen overflow-x-clip text-slate-900">
-      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(248,250,252,0.92),rgba(241,245,249,0.94))]" />
-      <div className="pointer-events-none absolute left-[-80px] top-[-120px] h-72 w-72 rounded-full bg-blue-300/25 blur-3xl" />
-      <div className="pointer-events-none absolute right-[-40px] top-[120px] h-64 w-64 rounded-full bg-amber-300/25 blur-3xl" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-300/70 to-transparent" />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50">
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-blue-200/20 blur-3xl animate-pulse" />
+        <div
+          className="absolute top-1/2 -left-40 h-80 w-80 rounded-full bg-amber-200/20 blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute -bottom-20 right-1/4 h-96 w-96 rounded-full bg-purple-200/10 blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
+      </div>
 
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 md:px-8 md:py-6">
-        <header className="sticky top-3 z-30 rounded-[2rem] border border-white/70 bg-white/80 p-4 shadow-2xl shadow-slate-200/60 backdrop-blur-xl md:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="grid h-11 w-11 place-items-center rounded-2xl bg-[linear-gradient(140deg,#2563eb,#facc15)] text-lg font-extrabold text-slate-950 shadow-lg shadow-blue-900/20">
-                E
-              </div>
-              <div>
-                <p className="text-[11px] uppercase tracking-[0.32em] text-slate-500">{t("nav.appName")}</p>
-                <h1 className="font-display text-2xl leading-tight text-slate-900 md:text-3xl">{t("nav.panelTitle")}</h1>
-              </div>
-            </div>
+      <div className="relative flex min-h-screen">
+        <Sidebar t={t} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="hidden rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:-translate-y-[1px] hover:border-blue-200 md:inline-flex"
-                onClick={() => setLanguage((prev) => (prev === "en" ? "amh" : "en"))}
-                aria-label={t("nav.language")}
-              >
-                {language === "en" ? t("nav.amharic") : t("nav.english")}
-              </button>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Navbar
+            t={t}
+            language={language}
+            setLanguage={setLanguage}
+            onMenuClick={() => setSidebarOpen((prev) => !prev)}
+          />
 
-              <button
-                type="button"
-                className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 md:hidden"
-                onClick={() => setMenuOpen((prev) => !prev)}
-              >
-                {menuOpen ? t("nav.close") : t("nav.menu")}
-              </button>
-            </div>
-          </div>
+          <main className="flex-1 overflow-auto px-4 py-6 md:px-6 md:py-8">
+            <div className="mx-auto max-w-7xl">{children}</div>
+          </main>
 
-          <p className="mt-3 hidden max-w-2xl text-sm text-slate-600 md:block">
-            {t("nav.panelSubtitle")}
-          </p>
-
-          <nav className={`mt-4 ${menuOpen ? "block" : "hidden"} md:block`}>
-            <div className="mb-3 md:hidden">
-              <button
-                type="button"
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200"
-                onClick={() => setLanguage((prev) => (prev === "en" ? "amh" : "en"))}
-                aria-label={t("nav.language")}
-              >
-                {language === "en" ? t("nav.amharic") : t("nav.english")}
-              </button>
-            </div>
-            <div className="flex flex-wrap gap-2 md:gap-2.5">
-            {links.map((item) => {
-              const active = isActive(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMenuOpen(false)}
-                  className={`rounded-full px-4 py-2 text-sm font-semibold transition duration-200 ${
-                    active
-                      ? "bg-[linear-gradient(135deg,#2563eb,#facc15)] text-slate-950 shadow-md shadow-blue-900/20"
-                      : "bg-white text-slate-700 ring-1 ring-slate-200 hover:-translate-y-[1px] hover:bg-blue-50"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
-            </div>
-          </nav>
-        </header>
-
-        <main className="pb-8">{children}</main>
+          <footer className="border-t border-slate-200/40 bg-white/30 px-4 py-4 text-center text-xs text-slate-500 backdrop-blur-sm md:px-6">
+            <p>© 2026 Electric ERP System. All rights reserved.</p>
+          </footer>
+        </div>
       </div>
     </div>
   );

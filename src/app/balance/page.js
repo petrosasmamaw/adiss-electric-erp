@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import Card from "@/components/Card";
+import DataTable from "@/components/DataTable";
+import InputField from "@/components/InputField";
+import SectionHeader from "@/components/SectionHeader";
+import StatCard from "@/components/StatCard";
 import {
   createFinanceEntry,
   fetchFinanceReports,
@@ -60,10 +65,7 @@ export default function BalancePage() {
 
   async function onPayCredit(supplierName) {
     const amount = Number(payAmounts[supplierName] || 0);
-
-    if (amount <= 0) {
-      return;
-    }
+    if (amount <= 0) return;
 
     await dispatch(
       paySupplierCredit({
@@ -77,232 +79,230 @@ export default function BalancePage() {
     dispatch(fetchFinanceReports({ range, account: accountFilter }));
   }
 
-  return (
-    <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <article className="rounded-3xl border border-emerald-200 bg-white/90 p-4 shadow-lg shadow-emerald-100/60">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t("common.balance")}</p>
-          <p className="mt-2 font-display text-3xl text-emerald-700">{asCurrency(financeSummary.balance)}</p>
-        </article>
-        <article
-          className="cursor-pointer rounded-3xl border border-amber-200 bg-white/90 p-4 shadow-lg shadow-amber-100/60"
-          onClick={() => setShowSupplierCredits((prev) => !prev)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setShowSupplierCredits((prev) => !prev);
-            }
-          }}
+  const reportColumns = [
+    {
+      key: "ethiopian_date",
+      label: t("common.date"),
+      render: (row) => row.ethiopian_date || "-",
+    },
+    {
+      key: "account_type",
+      label: t("balance.account"),
+      render: (row) => (
+        <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
+          {row.account_type === "balance" ? "Balance" : "Credit"}
+        </span>
+      ),
+    },
+    {
+      key: "direction",
+      label: t("balance.direction"),
+      render: (row) => (
+        <span
+          className={`rounded-lg px-2 py-1 text-xs font-semibold ${
+            row.direction === "in" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
+          }`}
         >
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t("common.credit")}</p>
-          <p className="mt-2 font-display text-3xl text-amber-700">{asCurrency(financeSummary.credit)}</p>
-          <p className="mt-2 text-xs text-slate-500">{t("balance.creditHint")}</p>
-        </article>
-        <article className="rounded-3xl border border-fuchsia-200 bg-white/90 p-4 shadow-lg shadow-fuchsia-100/60">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t("dashboard.profit")}</p>
-          <p className="mt-2 font-display text-3xl text-fuchsia-700">{asCurrency(financeSummary.profit)}</p>
-        </article>
-        <article className="rounded-3xl border border-indigo-200 bg-white/90 p-4 shadow-lg shadow-indigo-100/60">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t("balance.stockValue")}</p>
-          <p className="mt-2 font-display text-3xl text-indigo-700">{asCurrency(financeSummary.stockValue)}</p>
-        </article>
-        <article className="rounded-3xl border border-cyan-200 bg-white/90 p-4 shadow-lg shadow-cyan-100/60">
-          <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t("balance.netPosition")}</p>
-          <p className="mt-2 font-display text-3xl text-cyan-700">
-            {asCurrency(
-              Number(financeSummary.balance || 0) +
-                Number(financeSummary.stockValue || 0) -
-                Number(financeSummary.credit || 0)
-            )}
-          </p>
-        </article>
+          {row.direction === "in" ? "IN" : "OUT"}
+        </span>
+      ),
+    },
+    {
+      key: "amount",
+      label: t("common.amount"),
+      render: (row) => <span className="font-semibold">{asCurrency(row.amount)}</span>,
+    },
+    {
+      key: "supplier_name",
+      label: t("balance.supplier"),
+      render: (row) => row.supplier_name || "-",
+    },
+    {
+      key: "balance_after",
+      label: t("balance.balanceAfter"),
+      render: (row) => <span className="font-semibold text-slate-900">{asCurrency(row.balance_after)}</span>,
+    },
+  ];
+
+  return (
+    <section className="space-y-8">
+      <SectionHeader subtitle={t("common.finance")} title={t("balance.title")} />
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <StatCard label={t("common.balance")} value={asCurrency(financeSummary.balance)} icon="Balance" color="emerald" />
+        <div className="cursor-pointer" onClick={() => setShowSupplierCredits((prev) => !prev)}>
+          <StatCard label={t("common.credit")} value={asCurrency(financeSummary.credit)} icon="Credit" color="amber" />
+        </div>
+        <StatCard label={t("dashboard.profit")} value={asCurrency(financeSummary.profit)} icon="Profit" color="purple" />
+        <StatCard label={t("balance.stockValue")} value={asCurrency(financeSummary.stockValue)} icon="Stock" color="blue" />
+        <StatCard
+          label={t("balance.netPosition")}
+          value={asCurrency(
+            Number(financeSummary.balance || 0) +
+              Number(financeSummary.stockValue || 0) -
+              Number(financeSummary.credit || 0)
+          )}
+          icon="Net"
+          color="cyan"
+        />
       </div>
 
-      {showSupplierCredits ? (
-        <article className="rounded-3xl border border-amber-200 bg-white/90 p-5 shadow-lg shadow-amber-100/60">
-          <h2 className="font-display text-2xl">{t("balance.supplierCreditList")}</h2>
-          <p className="mt-1 text-sm text-slate-600">{t("balance.supplierCreditHint")}</p>
+      {showSupplierCredits && (
+        <Card variant="elevated" className="p-8">
+          <SectionHeader subtitle={t("balance.suppliers")} title={t("balance.supplierCreditList")} />
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.2em] text-slate-500">
-                  <th className="pb-3">{t("balance.supplier")}</th>
-                  <th className="pb-3">{t("balance.outstandingCredit")}</th>
-                  <th className="pb-3">{t("balance.payAmount")}</th>
-                  <th className="pb-3">{t("balance.action")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {supplierCredits.map((row) => (
-                  <tr key={row.id} className="border-b border-slate-100">
-                    <td className="py-3 font-medium">{row.supplier_name}</td>
-                    <td className="py-3">{asCurrency(row.amount)}</td>
-                    <td className="py-3">
-                      <input
-                        className="input max-w-[180px]"
-                        type="number"
-                        min="0.01"
-                        step="0.01"
-                        placeholder={t("common.amount")}
-                        value={payAmounts[row.supplier_name] || ""}
-                        onChange={(e) =>
-                          setPayAmounts((prev) => ({
-                            ...prev,
-                            [row.supplier_name]: e.target.value,
-                          }))
-                        }
-                      />
-                    </td>
-                    <td className="py-3">
-                      <button
-                        type="button"
-                        className="rounded-xl bg-amber-100 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-200"
-                        onClick={() => onPayCredit(row.supplier_name)}
-                        disabled={actionLoading}
-                      >
-                        {actionLoading ? t("balance.paying") : t("balance.payCredit")}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-                {supplierCredits.length === 0 ? (
-                  <tr>
-                    <td className="py-4 text-slate-500" colSpan={4}>{t("balance.noOutstanding")}</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
+          <div className="mt-6 space-y-3">
+            {supplierCredits.length === 0 ? (
+              <div className="p-8 text-center text-slate-500">{t("balance.noOutstanding")}</div>
+            ) : (
+              supplierCredits.map((row) => (
+                <div
+                  key={row.id}
+                  className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4 transition hover:bg-slate-50 md:flex-row md:items-center"
+                >
+                  <div className="flex-1">
+                    <p className="font-bold text-slate-900">{row.supplier_name}</p>
+                    <p className="mt-1 text-sm text-slate-600">
+                      {t("balance.outstandingCredit")}: <span className="font-semibold text-rose-600">{asCurrency(row.amount)}</span>
+                    </p>
+                  </div>
+
+                  <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
+                    <input
+                      className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-amber-400 sm:max-w-[140px]"
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="Pay amount"
+                      value={payAmounts[row.supplier_name] || ""}
+                      onChange={(e) =>
+                        setPayAmounts((prev) => ({
+                          ...prev,
+                          [row.supplier_name]: e.target.value,
+                        }))
+                      }
+                    />
+                    <button
+                      type="button"
+                      className="rounded-xl bg-amber-500 px-6 py-2.5 font-semibold text-white transition-all hover:bg-amber-600 disabled:cursor-not-allowed disabled:opacity-60"
+                      onClick={() => onPayCredit(row.supplier_name)}
+                      disabled={actionLoading}
+                    >
+                      {actionLoading ? "..." : "Pay"}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
-        </article>
-      ) : null}
+        </Card>
+      )}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_1.5fr]">
-        <form
-          onSubmit={onSubmit}
-          className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-lg shadow-slate-200/60"
-        >
-          <h2 className="font-display text-2xl">{t("balance.addOutEntry")}</h2>
-          <p className="mt-1 text-sm text-slate-600">{t("balance.addOutSubtitle")}</p>
+      <div className="grid gap-8 lg:grid-cols-3">
+        <Card variant="elevated" className="h-fit p-6 lg:col-span-1">
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div>
+              <h3 className="mb-1 text-lg font-bold text-slate-900">{t("balance.addOutEntry")}</h3>
+              <p className="text-sm text-slate-600">{t("balance.addOutSubtitle")}</p>
+            </div>
 
-          <div className="mt-4 grid gap-3">
-            <select
-              className="input"
-              value={form.account_type}
-              onChange={(e) =>
-                setForm((prev) => ({
-                  ...prev,
-                  account_type: e.target.value,
-                  supplier_name: e.target.value === "credit" ? prev.supplier_name : "",
-                }))
-              }
-            >
-              <option value="balance">{t("common.balance")}</option>
-              <option value="credit">{t("common.credit")}</option>
-            </select>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Account Type</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={form.account_type}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    account_type: e.target.value,
+                    supplier_name: e.target.value === "credit" ? prev.supplier_name : "",
+                  }))
+                }
+              >
+                <option value="balance">Balance</option>
+                <option value="credit">Credit</option>
+              </select>
+            </div>
 
-            <select
-              className="input"
-              value={form.direction}
-              onChange={(e) => setForm((prev) => ({ ...prev, direction: e.target.value }))}
-            >
-              <option value="in">{t("balance.addIn")}</option>
-              <option value="out">{t("balance.out")}</option>
-            </select>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Direction</label>
+              <select
+                className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+                value={form.direction}
+                onChange={(e) => setForm((prev) => ({ ...prev, direction: e.target.value }))}
+              >
+                <option value="in">In</option>
+                <option value="out">Out</option>
+              </select>
+            </div>
 
-            <input
-              className="input"
+            <InputField
+              label={t("common.amount")}
               type="number"
               min="0.01"
               step="0.01"
-              placeholder={t("common.amount")}
+              placeholder="0.00"
               value={form.amount}
               onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
               required
             />
 
-            {form.account_type === "credit" ? (
-              <input
-                className="input"
-                placeholder={t("balance.supplierName")}
+            {form.account_type === "credit" && (
+              <InputField
+                label={t("balance.supplierName")}
+                placeholder="Supplier name"
                 value={form.supplier_name}
                 onChange={(e) => setForm((prev) => ({ ...prev, supplier_name: e.target.value }))}
                 required
               />
-            ) : null}
+            )}
 
-            <input
-              className="input"
-              placeholder={t("balance.noteOptional")}
+            <InputField
+              label={t("balance.noteOptional")}
+              placeholder="Add note (optional)"
               value={form.note}
               onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
             />
 
-            <button type="submit" className="btn-primary" disabled={actionLoading}>
-              {actionLoading ? t("balance.saving") : t("balance.saveEntry")}
+            <button
+              type="submit"
+              className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 font-semibold text-white transition-all duration-200 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={actionLoading}
+            >
+              {actionLoading ? "Saving..." : "Add Entry"}
             </button>
-          </div>
-        </form>
+          </form>
+        </Card>
 
-        <article className="rounded-3xl border border-white/80 bg-white/90 p-5 shadow-lg shadow-slate-200/60">
-          <div className="flex flex-wrap items-end gap-3">
-            <div>
-              <p className="text-xs uppercase tracking-[0.2em] text-slate-500">{t("balance.filters")}</p>
-              <h2 className="font-display text-2xl">{t("balance.reportsTitle")}</h2>
-            </div>
-            <select className="input max-w-[180px]" value={range} onChange={(e) => setRange(e.target.value)}>
+        <div className="space-y-4 lg:col-span-2">
+          <Card variant="elevated" className="flex flex-col gap-3 p-4 sm:flex-row">
+            <select
+              className="rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+              value={range}
+              onChange={(e) => setRange(e.target.value)}
+            >
               <option value="all">{t("reports.allTime")}</option>
               <option value="today">{t("reports.today")}</option>
               <option value="7d">{t("reports.sevenDays")}</option>
               <option value="30d">{t("reports.thirtyDays")}</option>
             </select>
-            <select className="input max-w-[180px]" value={accountFilter} onChange={(e) => setAccountFilter(e.target.value)}>
+
+            <select
+              className="rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+              value={accountFilter}
+              onChange={(e) => setAccountFilter(e.target.value)}
+            >
               <option value="">{t("common.allAccounts")}</option>
               <option value="balance">{t("common.balance")}</option>
               <option value="credit">{t("common.credit")}</option>
             </select>
-          </div>
+          </Card>
 
-          <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-slate-200 text-xs uppercase tracking-[0.2em] text-slate-500">
-                  <th className="pb-3">{t("common.ethiopianDate")}</th>
-                  <th className="pb-3">{t("balance.account")}</th>
-                  <th className="pb-3">{t("balance.direction")}</th>
-                  <th className="pb-3">{t("common.amount")}</th>
-                  <th className="pb-3">{t("balance.supplier")}</th>
-                  <th className="pb-3">{t("common.source")}</th>
-                  <th className="pb-3">{t("common.note")}</th>
-                  <th className="pb-3">{t("balance.balanceAfter")}</th>
-                  <th className="pb-3">{t("balance.creditAfter")}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {financeReports.map((row) => (
-                  <tr key={row.id} className="border-b border-slate-100">
-                    <td className="py-3">{row.ethiopian_date || "-"}</td>
-                    <td className="py-3 capitalize">{row.account_type === "balance" ? t("balance.accountBalance") : t("balance.accountCredit")}</td>
-                    <td className="py-3 uppercase">{row.direction === "in" ? t("common.in") : t("common.out")}</td>
-                    <td className="py-3">{asCurrency(row.amount)}</td>
-                    <td className="py-3">{row.supplier_name || "-"}</td>
-                    <td className="py-3">{row.source || "-"}</td>
-                    <td className="py-3">{row.note || "-"}</td>
-                    <td className="py-3">{asCurrency(row.balance_after)}</td>
-                    <td className="py-3">{asCurrency(row.credit_after)}</td>
-                  </tr>
-                ))}
-                {financeReports.length === 0 ? (
-                  <tr>
-                    <td className="py-4 text-slate-500" colSpan={9}>{t("balance.noReports")}</td>
-                  </tr>
-                ) : null}
-              </tbody>
-            </table>
-          </div>
-        </article>
+          <Card variant="elevated" className="p-6">
+            <h3 className="mb-4 text-lg font-bold text-slate-900">{t("balance.reportsTitle")}</h3>
+            <DataTable columns={reportColumns} data={financeReports} />
+          </Card>
+        </div>
       </div>
     </section>
   );
