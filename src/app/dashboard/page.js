@@ -10,7 +10,10 @@ import { fetchDashboard, fetchTransactions } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function asCurrency(value) {
-  return `Rs ${Number(value || 0).toFixed(2)}`;
+  return `Rs ${Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 }
 
 export default function DashboardPage() {
@@ -92,7 +95,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 2xl:grid-cols-4">
         <StatCard
           label={t("dashboard.totalSales")}
           value={asCurrency(dashboard.totalSales)}
