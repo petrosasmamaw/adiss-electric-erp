@@ -58,6 +58,7 @@ function normalizeBatches(batchesRaw = []) {
     .map((batch) => ({
       id: Number(batch?.id || 0),
       batch_no: Number(batch?.batch_no || 0),
+      batch_name: String(batch?.batch_name || "").trim(),
       quantity: Number(batch?.quantity || 0),
       remaining_quantity: Number(batch?.remaining_quantity || 0),
       buy_price: parseNumeric(batch?.buy_price, 0),
@@ -89,7 +90,7 @@ async function getProducts(req, res) {
 
     if (search) {
       values.push(`%${search}%`);
-      where = "WHERE name ILIKE $1 OR category ILIKE $1";
+      where = "WHERE p.name ILIKE $1 OR p.category ILIKE $1";
     }
 
     const { rows } = await getPool().query(
@@ -107,6 +108,7 @@ async function getProducts(req, res) {
               jsonb_build_object(
                 'id', pb.id,
                 'batch_no', pb.batch_no,
+                'batch_name', pb.batch_name,
                 'quantity', pb.quantity,
                 'remaining_quantity', pb.remaining_quantity,
                 'buy_price', pb.buy_price,
@@ -138,9 +140,11 @@ async function createProduct(req, res) {
   const {
     name,
     category,
+    mode: modeRaw,
     default_price: defaultPriceRaw,
     stock: stockRaw,
     ids: idsRaw,
+    batch_name: batchNameRaw,
     image_url: imageUrl,
   } = req.body || {};
 
@@ -153,6 +157,14 @@ async function createProduct(req, res) {
   const idValues = ids.map(getIdValue);
   const uniqueValues = [...new Set(idValues)];
   const uniqueIds = uniqueValues.map((idValue) => ({ id: idValue, buy_price: defaultPrice }));
+  const requestedMode = String(modeRaw || "").trim().toLowerCase();
+  const normalizedMode = requestedMode === "bulk" || requestedMode === "id" || requestedMode === "tracked"
+    ? requestedMode
+    : uniqueIds.length > 0
+      ? "id"
+      : "bulk";
+  const isTrackedMode = normalizedMode === "id" || normalizedMode === "tracked";
+  const batchName = String(batchNameRaw || "").trim();
 
   if (ids.length !== uniqueIds.length) {
     return res.status(400).json({ error: "Duplicate IDs are not allowed" });
@@ -162,16 +174,36 @@ async function createProduct(req, res) {
     return res.status(400).json({ error: "default_price must be >= 0" });
   }
 
-  const stock = Number.isFinite(Number(stockRaw)) ? Number(stockRaw) : uniqueIds.length;
+  const stock = Number.isFinite(Number(stockRaw))
+    ? Number(stockRaw)
+    : isTrackedMode
+      ? uniqueIds.length
+      : 0;
 
   if (!Number.isInteger(stock) || stock < 0) {
     return res.status(400).json({ error: "stock must be a positive integer" });
   }
 
-  if (uniqueIds.length > 0 && stock !== uniqueIds.length) {
+  if (isTrackedMode && uniqueIds.length === 0) {
+    return res.status(400).json({ error: "Tracked mode requires IDs" });
+  }
+
+  if (!isTrackedMode && uniqueIds.length > 0) {
+    return res.status(400).json({ error: "Bulk mode cannot include IDs" });
+  }
+
+  if (isTrackedMode && stock !== uniqueIds.length) {
     return res.status(400).json({
       error: "For tracked items, stock must equal ids.length",
     });
+  }
+
+  if (!isTrackedMode && stock <= 0) {
+    return res.status(400).json({ error: "Bulk mode requires stock > 0" });
+  }
+
+  if (!isTrackedMode && !batchName) {
+    return res.status(400).json({ error: "batch_name is required for bulk mode" });
   }
 
   try {
@@ -180,19 +212,21 @@ async function createProduct(req, res) {
     try {
       await client.query("BEGIN");
 
+      const idsForInsert = isTrackedMode ? uniqueIds : [];
+
       const { rows } = await client.query(
         `
           INSERT INTO products (name, category, stock, default_price, ids, image_url)
           VALUES ($1, $2, $3, $4, $5::jsonb, $6)
           RETURNING id, name, category, stock, default_price, ids, image_url
         `,
-        [name.trim(), category.trim(), stock, defaultPrice, JSON.stringify(uniqueIds), imageUrl || null]
+        [name.trim(), category.trim(), stock, defaultPrice, JSON.stringify(idsForInsert), imageUrl || null]
       );
 
       const product = rows[0];
 
       if (stock > 0) {
-        if (uniqueIds.length > 0) {
+        if (isTrackedMode) {
           for (let index = 0; index < uniqueIds.length; index += 1) {
             const trackedId = uniqueIds[index].id;
             await logItemReport(client, {
@@ -200,6 +234,7 @@ async function createProduct(req, res) {
               itemId: trackedId,
               batchId: null,
               batchNo: null,
+              batchName: null,
               type: "buy",
               quantity: 1,
               buyPrice: defaultPrice,
@@ -217,14 +252,15 @@ async function createProduct(req, res) {
               INSERT INTO product_batches (
                 product_id,
                 batch_no,
+                batch_name,
                 quantity,
                 remaining_quantity,
                 buy_price
               )
-              VALUES ($1, $2, $3, $4, $5)
+              VALUES ($1, $2, $3, $4, $5, $6)
               RETURNING id, batch_no
             `,
-            [product.id, batchNo, stock, stock, defaultPrice]
+            [product.id, batchNo, batchName, stock, stock, defaultPrice]
           );
 
           const insertedBatch = batchRows[0];
@@ -234,6 +270,7 @@ async function createProduct(req, res) {
             itemId: null,
             batchId: insertedBatch?.id || null,
             batchNo: insertedBatch?.batch_no || batchNo,
+            batchName,
             type: "buy",
             quantity: stock,
             buyPrice: defaultPrice,
@@ -286,8 +323,10 @@ async function deleteProduct(req, res) {
 async function buyProduct(req, res) {
   const productId = Number(req.params.id);
   const {
+    mode: modeRaw,
     quantity: quantityRaw,
     ids: idsRaw,
+    batch_name: batchNameRaw,
     price: priceRaw,
     payment_source: paymentSourceRaw,
     supplier_name: supplierNameRaw,
@@ -332,6 +371,26 @@ async function buyProduct(req, res) {
     const financeDirection = paymentSource === "credit" ? "in" : "out";
 
     const currentIds = normalizeStoredIds(product.ids, parseNumeric(product.default_price, 0));
+    const productIsTracked = currentIds.length > 0;
+    const requestedMode = String(modeRaw || "").trim().toLowerCase();
+    const normalizedMode = requestedMode === "bulk" || requestedMode === "id" || requestedMode === "tracked"
+      ? requestedMode
+      : productIsTracked
+        ? "id"
+        : "bulk";
+    const isTrackedMode = normalizedMode === "id" || normalizedMode === "tracked";
+    const batchName = String(batchNameRaw || "").trim();
+
+    if (productIsTracked && !isTrackedMode) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "This product is tracked by IDs. Use ID mode." });
+    }
+
+    if (!productIsTracked && isTrackedMode) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "This product is bulk. Use bulk mode." });
+    }
+
     const trackedBuyIds = normalizeIncomingIds(idsRaw, unitPrice);
     const incomingValues = trackedBuyIds.map(getIdValue);
     const uniqueIncomingValues = [...new Set(incomingValues)];
@@ -350,12 +409,12 @@ async function buyProduct(req, res) {
       return res.status(400).json({ error: `Duplicate ID: ${getIdValue(duplicateExisting)}` });
     }
 
-    if (currentIds.length > 0 && trackedBuyIds.length === 0) {
+    if (productIsTracked && trackedBuyIds.length === 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Tracked products must be bought with IDs" });
     }
 
-    if (currentIds.length === 0 && trackedBuyIds.length > 0) {
+    if (!productIsTracked && trackedBuyIds.length > 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Bulk products must be bought by quantity" });
     }
@@ -384,7 +443,7 @@ async function buyProduct(req, res) {
       }
     }
 
-    if (trackedBuyIds.length > 0) {
+    if (isTrackedMode) {
       const newIds = [...currentIds, ...uniqueIncoming];
       const purchasedCount = uniqueIncoming.length;
       const newStock = product.stock + purchasedCount;
@@ -407,6 +466,9 @@ async function buyProduct(req, res) {
         await logItemReport(client, {
           productId,
           itemId: idValue,
+          batchId: null,
+          batchNo: null,
+          batchName: null,
           type: "buy",
           quantity: 1,
           buyPrice: unitPrice,
@@ -427,6 +489,11 @@ async function buyProduct(req, res) {
     if (!Number.isInteger(quantity) || quantity <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "quantity must be a positive integer" });
+    }
+
+    if (!batchName) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "batch_name is required for bulk mode" });
     }
 
     const newStock = product.stock + quantity;
@@ -450,14 +517,15 @@ async function buyProduct(req, res) {
         INSERT INTO product_batches (
           product_id,
           batch_no,
+          batch_name,
           quantity,
           remaining_quantity,
           buy_price
         )
-        VALUES ($1, $2, $3, $4, $5)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id, batch_no
       `,
-      [productId, batchNo, quantity, quantity, unitPrice]
+      [productId, batchNo, batchName, quantity, quantity, unitPrice]
     );
 
     const insertedBatch = batchRows[0];
@@ -467,6 +535,7 @@ async function buyProduct(req, res) {
       itemId: null,
       batchId: insertedBatch?.id || null,
       batchNo: insertedBatch?.batch_no || batchNo,
+      batchName,
       type: "buy",
       quantity,
       buyPrice: unitPrice,
@@ -591,6 +660,9 @@ async function sellProduct(req, res) {
         await logItemReport(client, {
           productId,
           itemId: soldId,
+          batchId: null,
+          batchNo: null,
+          batchName: null,
           type: "sell",
           quantity: 1,
           buyPrice,
@@ -621,7 +693,7 @@ async function sellProduct(req, res) {
 
     const { rows: batchRows } = await client.query(
       `
-        SELECT id, batch_no, quantity, remaining_quantity, buy_price
+        SELECT id, batch_no, batch_name, quantity, remaining_quantity, buy_price
         FROM product_batches
         WHERE product_id = $1 AND remaining_quantity > 0
         ORDER BY batch_no ASC, created_at ASC
@@ -682,6 +754,7 @@ async function sellProduct(req, res) {
       itemId: null,
       batchId: selectedBatch.id,
       batchNo: selectedBatch.batch_no,
+      batchName: selectedBatch.batch_name || `Batch ${selectedBatch.batch_no}`,
       type: "sell",
       quantity,
       buyPrice: selectedBatch.buy_price,

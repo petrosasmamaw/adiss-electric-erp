@@ -47,7 +47,7 @@ export default function ReportsPage() {
     {
       key: "batch_no",
       label: "Batch",
-      render: (row) => (row.batch_no ? `Batch ${row.batch_no}` : "—"),
+      render: (row) => (row.batch_name || (row.batch_no ? `Batch ${row.batch_no}` : "—")),
     },
     {
       key: "type",

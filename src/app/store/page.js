@@ -21,11 +21,15 @@ export default function StorePage() {
   const [form, setForm] = useState({
     name: "",
     category: "",
+    mode: "bulk",
+    batch_name: "",
     stock: "",
     default_price: "",
     idsText: "",
     image_url: defaultImage,
   });
+
+  const isTrackedMode = form.mode === "id";
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -49,26 +53,39 @@ export default function StorePage() {
   async function onSubmit(event) {
     event.preventDefault();
 
-    const ids = form.idsText
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((idValue) => ({ id: idValue }));
+    const ids = isTrackedMode
+      ? form.idsText
+          .split(",")
+          .map((part) => part.trim())
+          .filter(Boolean)
+          .map((idValue) => ({ id: idValue }))
+      : [];
+
+    const payload = {
+      name: form.name,
+      category: form.category,
+      mode: isTrackedMode ? "id" : "bulk",
+      default_price: Number(form.default_price || 0),
+      image_url: form.image_url || defaultImage,
+      ids,
+    };
+
+    if (isTrackedMode) {
+      payload.stock = ids.length;
+    } else {
+      payload.stock = form.stock ? Number(form.stock) : 0;
+      payload.batch_name = form.batch_name.trim();
+    }
 
     await dispatch(
-      createProduct({
-        name: form.name,
-        category: form.category,
-        stock: form.stock ? Number(form.stock) : undefined,
-        default_price: Number(form.default_price || 0),
-        ids,
-        image_url: form.image_url || defaultImage,
-      })
+      createProduct(payload)
     );
 
     setForm({
       name: "",
       category: "",
+      mode: "bulk",
+      batch_name: "",
       stock: "",
       default_price: "",
       idsText: "",
@@ -118,14 +135,53 @@ export default function StorePage() {
               required
             />
 
-            <InputField
-              label={t("store.stockOptional")}
-              type="number"
-              min="0"
-              placeholder="100"
-              value={form.stock}
-              onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))}
-            />
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Mode</label>
+              <select
+                value={form.mode}
+                onChange={(e) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    mode: e.target.value,
+                    idsText: e.target.value === "id" ? prev.idsText : "",
+                    batch_name: e.target.value === "bulk" ? prev.batch_name : "",
+                  }))
+                }
+                className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="bulk">Bulk</option>
+                <option value="id">By ID</option>
+              </select>
+            </div>
+
+            {isTrackedMode ? (
+              <InputField
+                label={t("store.idsInput")}
+                placeholder="ID1, ID2, ID3"
+                value={form.idsText}
+                onChange={(e) => setForm((prev) => ({ ...prev, idsText: e.target.value }))}
+                required
+              />
+            ) : (
+              <>
+                <InputField
+                  label="Batch Name"
+                  placeholder="Batch 1"
+                  value={form.batch_name}
+                  onChange={(e) => setForm((prev) => ({ ...prev, batch_name: e.target.value }))}
+                  required
+                />
+                <InputField
+                  label={t("store.stockOptional")}
+                  type="number"
+                  min="1"
+                  placeholder="100"
+                  value={form.stock}
+                  onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))}
+                  required
+                />
+              </>
+            )}
 
             <InputField
               label={t("store.defaultPrice")}
@@ -136,13 +192,6 @@ export default function StorePage() {
               value={form.default_price}
               onChange={(e) => setForm((prev) => ({ ...prev, default_price: e.target.value }))}
               required
-            />
-
-            <InputField
-              label={t("store.idsInput")}
-              placeholder="ID1, ID2, ID3"
-              value={form.idsText}
-              onChange={(e) => setForm((prev) => ({ ...prev, idsText: e.target.value }))}
             />
 
             <InputField

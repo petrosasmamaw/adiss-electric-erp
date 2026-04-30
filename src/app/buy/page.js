@@ -15,6 +15,8 @@ export default function BuyPage() {
   const { t } = useLanguage();
 
   const [selectedId, setSelectedId] = useState("");
+  const [mode, setMode] = useState("bulk");
+  const [batchName, setBatchName] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [idsText, setIdsText] = useState("");
   const [price, setPrice] = useState("");
@@ -31,7 +33,17 @@ export default function BuyPage() {
     [products, selectedId]
   );
 
-  const isTracked = idsText.trim().length > 0;
+  const productIsTracked = Array.isArray(selectedProduct?.ids) && selectedProduct.ids.length > 0;
+
+  useEffect(() => {
+    if (!selectedProduct) return;
+    setMode(productIsTracked ? "id" : "bulk");
+    setBatchName("");
+    setIdsText("");
+    setQuantity("1");
+  }, [productIsTracked, selectedProduct]);
+
+  const isTracked = mode === "id";
   const totalPrice = Number(price || selectedProduct?.default_price || 0);
   const units = isTracked
     ? idsText
@@ -50,14 +62,17 @@ export default function BuyPage() {
       .filter(Boolean)
       .map((idValue) => ({ id: idValue }));
 
-    const payload = ids.length
+    const payload = isTracked
       ? {
+          mode: "id",
           ids,
           price: totalPrice,
           payment_source: paymentSource,
           supplier_name: paymentSource === "credit" ? supplierName.trim() : undefined,
         }
       : {
+          mode: "bulk",
+          batch_name: batchName.trim(),
           quantity: Number(quantity),
           price: totalPrice,
           payment_source: paymentSource,
@@ -74,6 +89,7 @@ export default function BuyPage() {
       await dispatch(buyProduct({ productId: selectedId, payload })).unwrap();
       setQuantity("1");
       setIdsText("");
+      setBatchName("");
       setPrice("");
       setSupplierName("");
     } catch (error) {
@@ -100,31 +116,47 @@ export default function BuyPage() {
               noResultsText="No products match your search."
             />
 
-            <InputField
-              label={isTracked ? t("buy.idsTracked") : t("buy.quantityBulk")}
-              type={isTracked ? "text" : "number"}
-              min="1"
-              placeholder={isTracked ? "ID1, ID2, ID3" : "1"}
-              value={isTracked ? idsText : quantity}
-              onChange={(e) => (isTracked ? setIdsText(e.target.value) : setQuantity(e.target.value))}
-            />
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Mode</label>
+              <select
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
+                disabled={!selectedProduct}
+              >
+                <option value="bulk" disabled={selectedProduct ? productIsTracked : false}>Bulk</option>
+                <option value="id" disabled={selectedProduct ? !productIsTracked : false}>By ID</option>
+              </select>
+            </div>
 
             {isTracked ? (
               <InputField
-                label={t("buy.quantityBulk")}
-                type="number"
-                min="1"
-                placeholder="Alternative: enter quantity"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-              />
-            ) : (
-              <InputField
                 label={t("buy.idsTracked")}
-                placeholder="Alternative: enter IDs"
+                type="text"
+                placeholder="ID1, ID2, ID3"
                 value={idsText}
                 onChange={(e) => setIdsText(e.target.value)}
+                required
               />
+            ) : (
+              <>
+                <InputField
+                  label="Batch Name"
+                  placeholder="Batch 1"
+                  value={batchName}
+                  onChange={(e) => setBatchName(e.target.value)}
+                  required
+                />
+                <InputField
+                  label={t("buy.quantityBulk")}
+                  type="number"
+                  min="1"
+                  placeholder="1"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  required
+                />
+              </>
             )}
 
             <InputField

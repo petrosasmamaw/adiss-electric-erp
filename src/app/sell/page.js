@@ -150,7 +150,7 @@ export default function SellPage() {
                   <option value="">Select a batch</option>
                   {activeBatches.map((batch) => (
                     <option key={batch.id} value={batch.id}>
-                      Batch {batch.batch_no} - {batch.remaining_quantity} left @ Rs {Number(batch.buy_price || 0).toFixed(2)}
+                      {(batch.batch_name || `Batch ${batch.batch_no}`)} - {batch.remaining_quantity} left @ Rs {Number(batch.buy_price || 0).toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -218,7 +218,7 @@ export default function SellPage() {
                   {!isTrackedProduct && selectedBatch && (
                     <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
                       <p className="text-xs uppercase tracking-widest text-sky-600 font-semibold">Selected Batch</p>
-                      <p className="mt-1 text-lg font-bold text-slate-900">Batch {selectedBatch.batch_no}</p>
+                      <p className="mt-1 text-lg font-bold text-slate-900">{selectedBatch.batch_name || `Batch ${selectedBatch.batch_no}`}</p>
                       <p className="text-sm text-slate-600">
                         {selectedBatch.remaining_quantity} remaining at buy price Rs {Number(selectedBatch.buy_price || 0).toFixed(2)}
                       </p>
@@ -252,7 +252,7 @@ export default function SellPage() {
                     {!isTrackedProduct && selectedBatch && (
                       <div className="flex justify-between text-slate-600">
                         <span>Batch:</span>
-                        <span className="font-medium text-slate-900">Batch {selectedBatch.batch_no}</span>
+                        <span className="font-medium text-slate-900">{selectedBatch.batch_name || `Batch ${selectedBatch.batch_no}`}</span>
                       </div>
                     )}
                   </div>

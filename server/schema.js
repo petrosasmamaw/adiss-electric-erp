@@ -32,6 +32,7 @@ async function initSchema() {
       id SERIAL PRIMARY KEY,
       product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
       batch_no INTEGER NOT NULL,
+      batch_name TEXT,
       quantity INTEGER NOT NULL CHECK (quantity > 0),
       remaining_quantity INTEGER NOT NULL CHECK (remaining_quantity >= 0),
       buy_price NUMERIC(12, 2) NOT NULL CHECK (buy_price >= 0),
@@ -39,6 +40,14 @@ async function initSchema() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (product_id, batch_no)
     );
+  `);
+
+  await pool.query(`ALTER TABLE product_batches ADD COLUMN IF NOT EXISTS batch_name TEXT;`);
+
+  await pool.query(`
+    UPDATE product_batches
+    SET batch_name = CONCAT('Batch ', batch_no)
+    WHERE COALESCE(NULLIF(TRIM(batch_name), ''), '') = '';
   `);
 
   await pool.query(`
@@ -78,8 +87,8 @@ async function initSchema() {
   `);
 
   await pool.query(`
-    INSERT INTO product_batches (product_id, batch_no, quantity, remaining_quantity, buy_price)
-    SELECT p.id, 1, p.stock, p.stock, p.default_price
+    INSERT INTO product_batches (product_id, batch_no, batch_name, quantity, remaining_quantity, buy_price)
+    SELECT p.id, 1, 'Batch 1', p.stock, p.stock, p.default_price
     FROM products p
     WHERE COALESCE(jsonb_array_length(COALESCE(p.ids, '[]'::jsonb)), 0) = 0
       AND p.stock > 0
@@ -114,6 +123,11 @@ async function initSchema() {
   await pool.query(`
     ALTER TABLE item_reports
     ADD COLUMN IF NOT EXISTS batch_no INTEGER;
+  `);
+
+  await pool.query(`
+    ALTER TABLE item_reports
+    ADD COLUMN IF NOT EXISTS batch_name TEXT;
   `);
 
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS buy_price NUMERIC(12, 2) NOT NULL DEFAULT 0;`);

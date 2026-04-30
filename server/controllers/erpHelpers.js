@@ -182,7 +182,20 @@ async function applyFinanceEntry(
 
 async function logItemReport(
   client,
-  { productId, itemId, batchId = null, batchNo = null, type, quantity, buyPrice, sellPrice, price, profit, remainingStock }
+  {
+    productId,
+    itemId,
+    batchId = null,
+    batchNo = null,
+    batchName = null,
+    type,
+    quantity,
+    buyPrice,
+    sellPrice,
+    price,
+    profit,
+    remainingStock,
+  }
 ) {
   await client.query(
     `
@@ -191,6 +204,7 @@ async function logItemReport(
         item_id,
         batch_id,
         batch_no,
+        batch_name,
         type,
         quantity,
         buy_price,
@@ -206,6 +220,7 @@ async function logItemReport(
       itemId || null,
       batchId || null,
       batchNo || null,
+      batchName || null,
       type,
       quantity,
       buyPrice ?? null,
