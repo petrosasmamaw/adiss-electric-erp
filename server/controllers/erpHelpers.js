@@ -182,13 +182,15 @@ async function applyFinanceEntry(
 
 async function logItemReport(
   client,
-  { productId, itemId, type, quantity, buyPrice, sellPrice, price, profit, remainingStock }
+  { productId, itemId, batchId = null, batchNo = null, type, quantity, buyPrice, sellPrice, price, profit, remainingStock }
 ) {
   await client.query(
     `
       INSERT INTO item_reports (
         product_id,
         item_id,
+        batch_id,
+        batch_no,
         type,
         quantity,
         buy_price,
@@ -202,6 +204,8 @@ async function logItemReport(
     [
       productId,
       itemId || null,
+      batchId || null,
+      batchNo || null,
       type,
       quantity,
       buyPrice ?? null,

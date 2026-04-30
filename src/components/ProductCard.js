@@ -15,6 +15,7 @@ function formatId(item) {
 
 export default function ProductCard({ product, onDelete, deleting = false }) {
   const tracked = Array.isArray(product.ids) && product.ids.length > 0;
+  const batches = Array.isArray(product.batches) ? product.batches : [];
   const { t } = useLanguage();
   const [showActions, setShowActions] = useState(false);
 
@@ -80,6 +81,25 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
             <p className="max-h-12 overflow-hidden text-xs text-slate-700 line-clamp-2">
               {product.ids.map(formatId).filter(Boolean).join(", ")}
             </p>
+          </div>
+        )}
+
+        {!tracked && batches.length > 0 && (
+          <div className="px-3 py-2 bg-slate-50 rounded-lg space-y-2">
+            <p className="text-xs uppercase tracking-widest text-slate-600 font-semibold">Active Batches</p>
+            <div className="space-y-1.5 text-xs text-slate-700">
+              {batches.slice(0, 3).map((batch) => (
+                <div key={batch.id} className="flex items-center justify-between gap-2">
+                  <span className="font-medium">Batch {batch.batch_no}</span>
+                  <span className="text-slate-500">
+                    {batch.remaining_quantity}/{batch.quantity} @ Rs {Number(batch.buy_price || 0).toFixed(0)}
+                  </span>
+                </div>
+              ))}
+            </div>
+            {batches.length > 3 && (
+              <p className="text-[11px] text-slate-400">+ {batches.length - 3} more</p>
+            )}
           </div>
         )}
 

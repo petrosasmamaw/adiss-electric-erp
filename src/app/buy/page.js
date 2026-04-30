@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Card from "@/components/Card";
 import InputField from "@/components/InputField";
+import SearchableProductSelect from "@/components/SearchableProductSelect";
 import SectionHeader from "@/components/SectionHeader";
 import { buyProduct, fetchFinanceSummary, fetchProducts } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
@@ -89,22 +90,15 @@ export default function BuyPage() {
           <h3 className="mb-6 text-2xl font-bold text-slate-900">{t("buy.title")}</h3>
 
           <form onSubmit={onSubmit} className="space-y-5">
-            <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">{t("buy.selectProduct")}</label>
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                required
-                className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
-              >
-                <option value="">{t("buy.selectProduct")}</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name} ({product.category})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <SearchableProductSelect
+              label={t("buy.selectProduct")}
+              placeholder={t("buy.selectProduct")}
+              products={products}
+              value={selectedId}
+              onChange={setSelectedId}
+              searchPlaceholder="Search items to buy..."
+              noResultsText="No products match your search."
+            />
 
             <InputField
               label={isTracked ? t("buy.idsTracked") : t("buy.quantityBulk")}

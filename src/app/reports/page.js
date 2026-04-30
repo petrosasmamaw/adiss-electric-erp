@@ -45,6 +45,11 @@ export default function ReportsPage() {
       label: t("common.product"),
     },
     {
+      key: "batch_no",
+      label: "Batch",
+      render: (row) => (row.batch_no ? `Batch ${row.batch_no}` : "—"),
+    },
+    {
       key: "type",
       label: t("common.type"),
       render: (row) => (

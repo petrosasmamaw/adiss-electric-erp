@@ -49,6 +49,38 @@ function getIdValue(item) {
   return String(item?.id || "").trim();
 }
 
+function normalizeBatches(batchesRaw = []) {
+  if (!Array.isArray(batchesRaw)) {
+    return [];
+  }
+
+  return batchesRaw
+    .map((batch) => ({
+      id: Number(batch?.id || 0),
+      batch_no: Number(batch?.batch_no || 0),
+      quantity: Number(batch?.quantity || 0),
+      remaining_quantity: Number(batch?.remaining_quantity || 0),
+      buy_price: parseNumeric(batch?.buy_price, 0),
+      created_at: batch?.created_at || null,
+      updated_at: batch?.updated_at || null,
+    }))
+    .filter((batch) => batch.id > 0)
+    .sort((left, right) => left.batch_no - right.batch_no || left.id - right.id);
+}
+
+async function getNextBatchNo(client, productId) {
+  const { rows } = await client.query(
+    `
+      SELECT COALESCE(MAX(batch_no), 0) + 1 AS next_batch_no
+      FROM product_batches
+      WHERE product_id = $1
+    `,
+    [productId]
+  );
+
+  return Number(rows[0]?.next_batch_no || 1);
+}
+
 async function getProducts(req, res) {
   try {
     const search = String(req.query.search || "").trim();
@@ -62,10 +94,36 @@ async function getProducts(req, res) {
 
     const { rows } = await getPool().query(
       `
-        SELECT id, name, category, stock, default_price, ids, image_url
-        FROM products
+        SELECT
+          p.id,
+          p.name,
+          p.category,
+          p.stock,
+          p.default_price,
+          p.ids,
+          p.image_url,
+          COALESCE(
+            jsonb_agg(
+              jsonb_build_object(
+                'id', pb.id,
+                'batch_no', pb.batch_no,
+                'quantity', pb.quantity,
+                'remaining_quantity', pb.remaining_quantity,
+                'buy_price', pb.buy_price,
+                'created_at', pb.created_at,
+                'updated_at', pb.updated_at
+              )
+              ORDER BY pb.batch_no ASC, pb.created_at ASC
+            ) FILTER (WHERE pb.id IS NOT NULL),
+            '[]'::jsonb
+          ) AS batches
+        FROM products p
+        LEFT JOIN product_batches pb
+          ON pb.product_id = p.id
+          AND pb.remaining_quantity > 0
         ${where}
-        ORDER BY id DESC
+        GROUP BY p.id
+        ORDER BY p.id DESC
       `,
       values
     );
@@ -140,6 +198,8 @@ async function createProduct(req, res) {
             await logItemReport(client, {
               productId: product.id,
               itemId: trackedId,
+              batchId: null,
+              batchNo: null,
               type: "buy",
               quantity: 1,
               buyPrice: defaultPrice,
@@ -150,9 +210,30 @@ async function createProduct(req, res) {
             });
           }
         } else {
+          const batchNo = await getNextBatchNo(client, product.id);
+
+          const { rows: batchRows } = await client.query(
+            `
+              INSERT INTO product_batches (
+                product_id,
+                batch_no,
+                quantity,
+                remaining_quantity,
+                buy_price
+              )
+              VALUES ($1, $2, $3, $4, $5)
+              RETURNING id, batch_no
+            `,
+            [product.id, batchNo, stock, stock, defaultPrice]
+          );
+
+          const insertedBatch = batchRows[0];
+
           await logItemReport(client, {
             productId: product.id,
             itemId: null,
+            batchId: insertedBatch?.id || null,
+            batchNo: insertedBatch?.batch_no || batchNo,
             type: "buy",
             quantity: stock,
             buyPrice: defaultPrice,
@@ -167,7 +248,6 @@ async function createProduct(req, res) {
       }
 
       await client.query("COMMIT");
-
       return res.status(201).json(product);
     } catch (error) {
       await client.query("ROLLBACK");
@@ -275,6 +355,11 @@ async function buyProduct(req, res) {
       return res.status(400).json({ error: "Tracked products must be bought with IDs" });
     }
 
+    if (currentIds.length === 0 && trackedBuyIds.length > 0) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Bulk products must be bought by quantity" });
+    }
+
     async function applyBuyFinanceEntry(amount, note) {
       try {
         await applyFinanceEntry(client, {
@@ -346,6 +431,7 @@ async function buyProduct(req, res) {
 
     const newStock = product.stock + quantity;
     const purchaseAmount = unitPrice * quantity;
+    const batchNo = await getNextBatchNo(client, productId);
 
     await applyBuyFinanceEntry(
       purchaseAmount,
@@ -355,13 +441,32 @@ async function buyProduct(req, res) {
     );
 
     await client.query(
-      `UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2`,
-      [newStock, productId]
+      `UPDATE products SET stock = $1, default_price = $2, updated_at = NOW() WHERE id = $3`,
+      [newStock, unitPrice, productId]
     );
+
+    const { rows: batchRows } = await client.query(
+      `
+        INSERT INTO product_batches (
+          product_id,
+          batch_no,
+          quantity,
+          remaining_quantity,
+          buy_price
+        )
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, batch_no
+      `,
+      [productId, batchNo, quantity, quantity, unitPrice]
+    );
+
+    const insertedBatch = batchRows[0];
 
     await logItemReport(client, {
       productId,
       itemId: null,
+      batchId: insertedBatch?.id || null,
+      batchNo: insertedBatch?.batch_no || batchNo,
       type: "buy",
       quantity,
       buyPrice: unitPrice,
@@ -507,24 +612,60 @@ async function sellProduct(req, res) {
     }
 
     const quantity = Number(quantityRaw);
+    const batchId = Number(req.body?.batch_id || req.body?.batchId || 0);
 
     if (!Number.isInteger(quantity) || quantity <= 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "quantity must be a positive integer" });
     }
 
-    if (quantity > product.stock) {
+    const { rows: batchRows } = await client.query(
+      `
+        SELECT id, batch_no, quantity, remaining_quantity, buy_price
+        FROM product_batches
+        WHERE product_id = $1 AND remaining_quantity > 0
+        ORDER BY batch_no ASC, created_at ASC
+        FOR UPDATE
+      `,
+      [productId]
+    );
+
+    const activeBatches = normalizeBatches(batchRows);
+    const selectedBatch = Number.isInteger(batchId) && batchId > 0
+      ? activeBatches.find((batch) => batch.id === batchId)
+      : activeBatches[0];
+
+    if (!selectedBatch) {
       await client.query("ROLLBACK");
-      return res.status(400).json({ error: "Not enough stock" });
+      return res.status(400).json({ error: "Please select a valid batch" });
+    }
+
+    if (quantity > selectedBatch.remaining_quantity) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "Not enough stock in the selected batch" });
     }
 
     const newStock = product.stock - quantity;
     const saleAmount = unitPrice * quantity;
+    const newRemaining = selectedBatch.remaining_quantity - quantity;
 
     await client.query(
       `UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2`,
       [newStock, productId]
     );
+
+    if (newRemaining === 0) {
+      await client.query(`DELETE FROM product_batches WHERE id = $1`, [selectedBatch.id]);
+    } else {
+      await client.query(
+        `
+          UPDATE product_batches
+          SET remaining_quantity = $1, updated_at = NOW()
+          WHERE id = $2
+        `,
+        [newRemaining, selectedBatch.id]
+      );
+    }
 
     await applyFinanceEntry(client, {
       accountType: "balance",
@@ -539,12 +680,14 @@ async function sellProduct(req, res) {
     await logItemReport(client, {
       productId,
       itemId: null,
+      batchId: selectedBatch.id,
+      batchNo: selectedBatch.batch_no,
       type: "sell",
       quantity,
-      buyPrice: 0,
+      buyPrice: selectedBatch.buy_price,
       sellPrice: unitPrice,
       price: unitPrice,
-      profit: 0,
+      profit: (unitPrice - selectedBatch.buy_price) * quantity,
       remainingStock: newStock,
     });
 

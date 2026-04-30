@@ -28,6 +28,20 @@ async function initSchema() {
   }
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS product_batches (
+      id SERIAL PRIMARY KEY,
+      product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+      batch_no INTEGER NOT NULL,
+      quantity INTEGER NOT NULL CHECK (quantity > 0),
+      remaining_quantity INTEGER NOT NULL CHECK (remaining_quantity >= 0),
+      buy_price NUMERIC(12, 2) NOT NULL CHECK (buy_price >= 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (product_id, batch_no)
+    );
+  `);
+
+  await pool.query(`
     UPDATE products
     SET ids = COALESCE(
       (
@@ -64,6 +78,19 @@ async function initSchema() {
   `);
 
   await pool.query(`
+    INSERT INTO product_batches (product_id, batch_no, quantity, remaining_quantity, buy_price)
+    SELECT p.id, 1, p.stock, p.stock, p.default_price
+    FROM products p
+    WHERE COALESCE(jsonb_array_length(COALESCE(p.ids, '[]'::jsonb)), 0) = 0
+      AND p.stock > 0
+      AND NOT EXISTS (
+        SELECT 1
+        FROM product_batches pb
+        WHERE pb.product_id = p.id
+      );
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS item_reports (
       id SERIAL PRIMARY KEY,
       product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -77,6 +104,16 @@ async function initSchema() {
       remaining_stock INTEGER NOT NULL CHECK (remaining_stock >= 0),
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  await pool.query(`
+    ALTER TABLE item_reports
+    ADD COLUMN IF NOT EXISTS batch_id INTEGER REFERENCES product_batches(id) ON DELETE SET NULL;
+  `);
+
+  await pool.query(`
+    ALTER TABLE item_reports
+    ADD COLUMN IF NOT EXISTS batch_no INTEGER;
   `);
 
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS buy_price NUMERIC(12, 2) NOT NULL DEFAULT 0;`);
@@ -144,6 +181,14 @@ async function initSchema() {
 
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_item_reports_product_id ON item_reports(product_id);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_product_batches_product_id ON product_batches(product_id);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_product_batches_product_id_remaining ON product_batches(product_id, remaining_quantity);
   `);
 
   await pool.query(`

@@ -27,6 +27,8 @@ async function getItemReports(req, res) {
           ir.product_id,
           p.name AS product_name,
           ir.item_id,
+          ir.batch_id,
+          ir.batch_no,
           ir.type,
           ir.quantity,
           ir.buy_price,

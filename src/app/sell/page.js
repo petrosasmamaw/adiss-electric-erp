@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import Card from "@/components/Card";
 import SectionHeader from "@/components/SectionHeader";
 import InputField from "@/components/InputField";
+import SearchableProductSelect from "@/components/SearchableProductSelect";
 import { fetchProducts, sellProduct } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -23,6 +24,7 @@ export default function SellPage() {
   const [selectedId, setSelectedId] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [itemId, setItemId] = useState("");
+  const [selectedBatchId, setSelectedBatchId] = useState("");
   const [price, setPrice] = useState("");
 
   useEffect(() => {
@@ -34,25 +36,69 @@ export default function SellPage() {
     [products, selectedId]
   );
 
-  const isTracked = itemId.trim().length > 0;
+  const isTrackedProduct = Array.isArray(selectedProduct?.ids) && selectedProduct.ids.length > 0;
+  const activeBatches = useMemo(
+    () => (Array.isArray(selectedProduct?.batches) ? selectedProduct.batches : []),
+    [selectedProduct]
+  );
+  const selectedBatch = useMemo(
+    () => activeBatches.find((batch) => String(batch.id) === String(selectedBatchId)),
+    [activeBatches, selectedBatchId]
+  );
+
   const sellPrice = Number(price || selectedProduct?.default_price || 0);
+
+  useEffect(() => {
+    setPrice("");
+    setQuantity("1");
+    setItemId("");
+    setSelectedBatchId("");
+  }, [selectedId]);
+
+  useEffect(() => {
+    if (!selectedProduct || isTrackedProduct) {
+      return;
+    }
+
+    if (activeBatches.length > 0 && !selectedBatchId) {
+      setSelectedBatchId(String(activeBatches[0].id));
+    }
+  }, [activeBatches, isTrackedProduct, selectedBatchId, selectedProduct]);
 
   async function onSubmit(event) {
     event.preventDefault();
     if (!selectedId) return;
 
+    if (isTrackedProduct) {
     const idList = itemId
       .split(",")
       .map((part) => part.trim())
       .filter(Boolean);
 
-    const payload = idList.length
-      ? { item_ids: idList, price: sellPrice }
-      : { quantity: Number(quantity), price: sellPrice };
+      const payload = idList.length
+        ? { item_ids: idList, price: sellPrice }
+        : { quantity: Number(quantity), price: sellPrice };
+
+      await dispatch(sellProduct({ productId: selectedId, payload }));
+      setQuantity("1");
+      setItemId("");
+      setPrice("");
+      return;
+    }
+
+    if (!selectedBatchId) {
+      alert("Please select a batch");
+      return;
+    }
+
+    const payload = {
+      batch_id: Number(selectedBatchId),
+      quantity: Number(quantity),
+      price: sellPrice,
+    };
 
     await dispatch(sellProduct({ productId: selectedId, payload }));
     setQuantity("1");
-    setItemId("");
     setPrice("");
   }
 
@@ -74,55 +120,52 @@ export default function SellPage() {
 
           <form onSubmit={onSubmit} className="space-y-5">
             {/* Product Selection */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                {t("sell.selectProduct")}
-              </label>
-              <select
-                value={selectedId}
-                onChange={(e) => setSelectedId(e.target.value)}
-                required
-                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-rose-400 transition-all font-medium text-slate-900"
-              >
-                <option value="">{t("sell.selectProduct")}</option>
-                {products.map((product) => (
-                  <option key={product.id} value={product.id}>
-                    {product.name} ({product.category})
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Quantity */}
-            <InputField
-              label={isTracked ? t("sell.idsTracked") : t("sell.quantityBulk")}
-              type={isTracked ? "text" : "number"}
-              min="1"
-              placeholder={isTracked ? "ID1, ID2, ID3" : "1"}
-              value={isTracked ? itemId : quantity}
-              onChange={(e) =>
-                isTracked
-                  ? setItemId(e.target.value)
-                  : setQuantity(e.target.value)
-              }
+            <SearchableProductSelect
+              label={t("sell.selectProduct")}
+              placeholder={t("sell.selectProduct")}
+              products={products}
+              value={selectedId}
+              onChange={setSelectedId}
+              searchPlaceholder="Search items to sell..."
+              noResultsText="No products match your search."
             />
 
+            {/* Quantity */}
+            {isTrackedProduct ? (
+              <InputField
+                label={t("sell.idsTracked")}
+                placeholder="ID1, ID2, ID3"
+                value={itemId}
+                onChange={(e) => setItemId(e.target.value)}
+              />
+            ) : (
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-700">Batch</label>
+                <select
+                  value={selectedBatchId}
+                  onChange={(e) => setSelectedBatchId(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-rose-400"
+                  required
+                >
+                  <option value="">Select a batch</option>
+                  {activeBatches.map((batch) => (
+                    <option key={batch.id} value={batch.id}>
+                      Batch {batch.batch_no} - {batch.remaining_quantity} left @ Rs {Number(batch.buy_price || 0).toFixed(2)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             {/* Alternative Input */}
-            {isTracked ? (
+            {!isTrackedProduct && (
               <InputField
                 label={t("sell.quantityBulk")}
                 type="number"
                 min="1"
-                placeholder="Alternative: enter quantity"
+                placeholder="Enter quantity to sell"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-              />
-            ) : (
-              <InputField
-                label={t("sell.idsTracked")}
-                placeholder="Alternative: enter item IDs"
-                value={itemId}
-                onChange={(e) => setItemId(e.target.value)}
               />
             )}
 
@@ -139,7 +182,7 @@ export default function SellPage() {
 
             {/* Submit Button */}
             <button
-              disabled={actionLoading || !selectedId}
+              disabled={actionLoading || !selectedId || (!isTrackedProduct && !selectedBatchId)}
               type="submit"
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
             >
@@ -171,6 +214,16 @@ export default function SellPage() {
                       <p className="text-2xl font-bold text-amber-700 mt-1">Rs {Number(selectedProduct.default_price).toFixed(0)}</p>
                     </div>
                   </div>
+
+                  {!isTrackedProduct && selectedBatch && (
+                    <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
+                      <p className="text-xs uppercase tracking-widest text-sky-600 font-semibold">Selected Batch</p>
+                      <p className="mt-1 text-lg font-bold text-slate-900">Batch {selectedBatch.batch_no}</p>
+                      <p className="text-sm text-slate-600">
+                        {selectedBatch.remaining_quantity} remaining at buy price Rs {Number(selectedBatch.buy_price || 0).toFixed(2)}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </Card>
 
@@ -179,8 +232,8 @@ export default function SellPage() {
                 <h4 className="text-lg font-bold text-slate-900 mb-4">Sales Summary</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600">{isTracked ? "Item IDs" : "Quantity"}</span>
-                    <span className="font-semibold text-slate-900">{isTracked ? itemId.split(",").length : quantity}</span>
+                    <span className="text-slate-600">{isTrackedProduct ? "Item IDs" : "Quantity"}</span>
+                    <span className="font-semibold text-slate-900">{isTrackedProduct ? itemId.split(",").filter(Boolean).length : quantity}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600">Sell Price</span>
@@ -188,14 +241,20 @@ export default function SellPage() {
                   </div>
                   <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
                     <span className="font-semibold text-slate-900">Total Revenue</span>
-                    <span className="text-2xl font-bold text-emerald-600">Rs {(sellPrice * (isTracked ? itemId.split(",").length : Number(quantity) || 1)).toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-emerald-600">Rs {(sellPrice * (isTrackedProduct ? itemId.split(",").filter(Boolean).length : Number(quantity) || 1)).toFixed(2)}</span>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-200 space-y-2 text-sm">
                     <div className="flex justify-between text-slate-600">
                       <span>Mode:</span>
-                      <span className="font-medium text-slate-900">{isTracked ? "Tracked" : "Bulk"}</span>
+                      <span className="font-medium text-slate-900">{isTrackedProduct ? "Tracked" : "Bulk"}</span>
                     </div>
+                    {!isTrackedProduct && selectedBatch && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>Batch:</span>
+                        <span className="font-medium text-slate-900">Batch {selectedBatch.batch_no}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </Card>
@@ -203,7 +262,7 @@ export default function SellPage() {
               {/* Profit Indicator */}
               <Card variant="elevated" className="p-6 bg-gradient-to-br from-slate-50 to-emerald-50">
                 <h4 className="text-sm font-bold text-slate-700 uppercase tracking-widest mb-3">Expected Profit</h4>
-                <p className="text-3xl font-bold text-emerald-600">~Rs {((sellPrice - (selectedProduct.default_price || 0)) * (isTracked ? itemId.split(",").length : Number(quantity) || 1)).toFixed(2)}</p>
+                <p className="text-3xl font-bold text-emerald-600">~Rs {((sellPrice - (isTrackedProduct ? (selectedProduct.default_price || 0) : (selectedBatch?.buy_price || selectedProduct.default_price || 0))) * (isTrackedProduct ? itemId.split(",").filter(Boolean).length : Number(quantity) || 1)).toFixed(2)}</p>
               </Card>
             </>
           )}

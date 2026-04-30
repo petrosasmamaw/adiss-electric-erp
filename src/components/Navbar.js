@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
-
 export default function Navbar({ t, language, setLanguage, onMenuClick }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl">
       <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-6">
-        {/* Left: Menu Button + Search */}
+        {/* Left: Menu Button + Brand */}
         <div className="flex items-center gap-4 flex-1">
           <button
             onClick={onMenuClick}
@@ -18,16 +16,19 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
             </svg>
           </button>
 
-          {/* Search Bar */}
-          <div className="hidden md:flex items-center gap-2 flex-1 max-w-sm px-4 py-2.5 rounded-xl bg-slate-100/50 border border-slate-200">
-            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <input
-              type="text"
-              placeholder={t("nav.search") || "Search..."}
-              className="flex-1 bg-transparent text-sm outline-none placeholder:text-slate-400"
-            />
+          {/* Brand Mark */}
+          <div className="hidden md:flex items-center gap-3 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-white via-amber-50 to-sky-50 px-4 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 via-blue-500 to-amber-400 text-white shadow-lg shadow-sky-500/20">
+              <span className="text-sm font-black tracking-[0.18em]">AE</span>
+            </div>
+            <div className="leading-none">
+              <div className="font-display text-lg font-bold tracking-wide text-slate-900">
+                Adiss Electric
+              </div>
+              <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+                Powering smart operations
+              </div>
+            </div>
           </div>
         </div>
 
