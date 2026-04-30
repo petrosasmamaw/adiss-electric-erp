@@ -131,7 +131,8 @@ async function getProducts(req, res) {
     );
 
     res.json(rows);
-  } catch (_error) {
+  } catch (error) {
+    console.error("getProducts failed", error);
     res.status(500).json({ error: "Failed to load products" });
   }
 }
@@ -292,8 +293,9 @@ async function createProduct(req, res) {
     } finally {
       client.release();
     }
-  } catch (_error) {
-    return res.status(500).json({ error: "Failed to create product" });
+  } catch (error) {
+    console.error("createProduct error:", error);
+    return res.status(500).json({ error: "Failed to create product", details: error.message });
   }
 }
 
