@@ -132,12 +132,15 @@ export default function SellPage() {
 
             {/* Quantity */}
             {isTrackedProduct ? (
-              <InputField
-                label={t("sell.idsTracked")}
-                placeholder="ID1, ID2, ID3"
-                value={itemId}
-                onChange={(e) => setItemId(e.target.value)}
-              />
+              <div>
+                <InputField
+                  label={t("sell.idsTracked")}
+                  placeholder="ID1, ID2, ID3"
+                  value={itemId}
+                  onChange={(e) => setItemId(e.target.value)}
+                />
+                <p className="text-xs text-slate-500 mt-2">Enter the IDs you want to sell, separated by commas</p>
+              </div>
             ) : (
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-700">Batch</label>
@@ -214,6 +217,20 @@ export default function SellPage() {
                       <p className="text-2xl font-bold text-amber-700 mt-1">Rs {Number(selectedProduct.default_price).toFixed(0)}</p>
                     </div>
                   </div>
+
+                  {isTrackedProduct && Array.isArray(selectedProduct.ids) && selectedProduct.ids.length > 0 && (
+                    <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3">
+                      <p className="text-xs uppercase tracking-widest text-purple-600 font-semibold">Available IDs</p>
+                      <p className="mt-2 text-sm text-slate-700 max-h-24 overflow-y-auto">
+                        {selectedProduct.ids.map((item, index) => (
+                          <span key={index} className="inline-block mr-2 mb-1 px-2 py-1 bg-white rounded border border-purple-200 text-xs font-mono">
+                            {typeof item === 'object' ? item.id : item}
+                          </span>
+                        ))}
+                      </p>
+                      <p className="text-xs text-purple-600 mt-2 font-semibold">Total: {selectedProduct.ids.length} items available</p>
+                    </div>
+                  )}
 
                   {!isTrackedProduct && selectedBatch && (
                     <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
