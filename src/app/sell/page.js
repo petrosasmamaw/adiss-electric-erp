@@ -9,13 +9,6 @@ import SearchableProductSelect from "@/components/SearchableProductSelect";
 import { fetchProducts, sellProduct } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
-function formatTrackedId(item) {
-  if (!item) return "";
-  const idValue = item.id || "";
-  const buyPrice = Number(item.buy_price || 0);
-  return buyPrice > 0 ? `${idValue} (Cost Rs ${buyPrice.toFixed(2)})` : idValue;
-}
-
 export default function SellPage() {
   const dispatch = useDispatch();
   const { products, actionLoading } = useSelector((state) => state.erp);
@@ -45,6 +38,30 @@ export default function SellPage() {
     () => activeBatches.find((batch) => String(batch.id) === String(selectedBatchId)),
     [activeBatches, selectedBatchId]
   );
+
+  const selectedTrackedIds = useMemo(
+    () => itemId.split(",").map((value) => value.trim()).filter(Boolean),
+    [itemId]
+  );
+
+  const trackedCostTotal = useMemo(() => {
+    if (!isTrackedProduct || !Array.isArray(selectedProduct?.ids)) {
+      return 0;
+    }
+
+    return selectedTrackedIds.reduce((sum, idValue) => {
+      const matched = selectedProduct.ids.find((item) => {
+        const currentId = typeof item === "object" ? String(item.id || "").trim() : String(item || "").trim();
+        return currentId === idValue;
+      });
+
+      const buyPrice = typeof matched === "object"
+        ? Number(matched.buy_price || selectedProduct.default_price || 0)
+        : Number(selectedProduct.default_price || 0);
+
+      return sum + buyPrice;
+    }, 0);
+  }, [isTrackedProduct, selectedProduct, selectedTrackedIds]);
 
   const sellPrice = Number(price || selectedProduct?.default_price || 0);
 
@@ -222,11 +239,15 @@ export default function SellPage() {
                     <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3">
                       <p className="text-xs uppercase tracking-widest text-purple-600 font-semibold">Available IDs</p>
                       <p className="mt-2 text-sm text-slate-700 max-h-24 overflow-y-auto">
-                        {selectedProduct.ids.map((item, index) => (
-                          <span key={index} className="inline-block mr-2 mb-1 px-2 py-1 bg-white rounded border border-purple-200 text-xs font-mono">
-                            {typeof item === 'object' ? item.id : item}
-                          </span>
-                        ))}
+                        {selectedProduct.ids.map((item, index) => {
+                          const idValue = typeof item === 'object' ? item.id : item;
+                          const idPrice = typeof item === 'object' ? item.buy_price : null;
+                          return (
+                            <span key={index} className="inline-block mr-2 mb-1 px-2 py-1 bg-white rounded border border-purple-200 text-xs font-mono">
+                              {idValue} {idPrice ? `(Rs ${Number(idPrice).toFixed(0)})` : ''}
+                            </span>
+                          );
+                        })}
                       </p>
                       <p className="text-xs text-purple-600 mt-2 font-semibold">Total: {selectedProduct.ids.length} items available</p>
                     </div>
@@ -250,7 +271,7 @@ export default function SellPage() {
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600">{isTrackedProduct ? "Item IDs" : "Quantity"}</span>
-                    <span className="font-semibold text-slate-900">{isTrackedProduct ? itemId.split(",").filter(Boolean).length : quantity}</span>
+                    <span className="font-semibold text-slate-900">{isTrackedProduct ? selectedTrackedIds.length : quantity}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600">Sell Price</span>
@@ -258,7 +279,7 @@ export default function SellPage() {
                   </div>
                   <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
                     <span className="font-semibold text-slate-900">Total Revenue</span>
-                    <span className="text-2xl font-bold text-emerald-600">Rs {(sellPrice * (isTrackedProduct ? itemId.split(",").filter(Boolean).length : Number(quantity) || 1)).toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-emerald-600">Rs {(sellPrice * (isTrackedProduct ? selectedTrackedIds.length : Number(quantity) || 1)).toFixed(2)}</span>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-200 space-y-2 text-sm">
@@ -279,7 +300,10 @@ export default function SellPage() {
               {/* Profit Indicator */}
               <Card variant="elevated" className="p-6 bg-gradient-to-br from-slate-50 to-emerald-50">
                 <h4 className="text-sm font-bold text-slate-700 uppercase tracking-widest mb-3">Expected Profit</h4>
-                <p className="text-3xl font-bold text-emerald-600">~Rs {((sellPrice - (isTrackedProduct ? (selectedProduct.default_price || 0) : (selectedBatch?.buy_price || selectedProduct.default_price || 0))) * (isTrackedProduct ? itemId.split(",").filter(Boolean).length : Number(quantity) || 1)).toFixed(2)}</p>
+                <p className="text-3xl font-bold text-emerald-600">~Rs {(isTrackedProduct
+                  ? (sellPrice * selectedTrackedIds.length - trackedCostTotal)
+                  : ((sellPrice - (selectedBatch?.buy_price || selectedProduct.default_price || 0)) * (Number(quantity) || 1))
+                ).toFixed(2)}</p>
               </Card>
             </>
           )}

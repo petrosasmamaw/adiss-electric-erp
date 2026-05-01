@@ -14,13 +14,14 @@ function normalizeIncomingIds(idsRaw, buyPrice = 0) {
   return idsRaw
     .map((value) => {
       if (value && typeof value === "object") {
-        return String(value.id || "").trim();
+        const id = String(value.id || "").trim();
+        const price = parseNumeric(value.buy_price, buyPrice);
+        return { id, buy_price: price };
       }
 
-      return String(value || "").trim();
+      return { id: String(value || "").trim(), buy_price: buyPrice };
     })
-    .filter(Boolean)
-    .map((idValue) => ({ id: idValue, buy_price: buyPrice }));
+    .filter((item) => Boolean(item.id));
 }
 
 function normalizeStoredIds(idsRaw, fallbackBuyPrice = 0) {
@@ -229,7 +230,10 @@ async function createProduct(req, res) {
       if (stock > 0) {
         if (isTrackedMode) {
           for (let index = 0; index < uniqueIds.length; index += 1) {
-            const trackedId = uniqueIds[index].id;
+            const trackedItem = uniqueIds[index];
+            const trackedId = trackedItem.id;
+            const idBuyPrice = parseNumeric(trackedItem.buy_price, defaultPrice);
+            
             await logItemReport(client, {
               productId: product.id,
               itemId: trackedId,
@@ -238,9 +242,9 @@ async function createProduct(req, res) {
               batchName: null,
               type: "buy",
               quantity: 1,
-              buyPrice: defaultPrice,
+              buyPrice: idBuyPrice,
               sellPrice: null,
-              price: defaultPrice,
+              price: idBuyPrice,
               profit: 0,
               remainingStock: index + 1,
             });
@@ -282,7 +286,15 @@ async function createProduct(req, res) {
           });
         }
 
-        await logTransaction(client, product.id, "buy", defaultPrice * stock);
+        // Calculate total purchase amount
+        let totalAmount = 0;
+        if (isTrackedMode) {
+          totalAmount = uniqueIds.reduce((sum, item) => sum + parseNumeric(item.buy_price, defaultPrice), 0);
+        } else {
+          totalAmount = defaultPrice * stock;
+        }
+
+        await logTransaction(client, product.id, "buy", totalAmount);
       }
 
       await client.query("COMMIT");
@@ -396,7 +408,15 @@ async function buyProduct(req, res) {
     const trackedBuyIds = normalizeIncomingIds(idsRaw, unitPrice);
     const incomingValues = trackedBuyIds.map(getIdValue);
     const uniqueIncomingValues = [...new Set(incomingValues)];
-    const uniqueIncoming = uniqueIncomingValues.map((idValue) => ({ id: idValue, buy_price: unitPrice }));
+    
+    // Create unique incoming with individual buy prices from the frontend
+    const uniqueIncoming = uniqueIncomingValues.map((idValue) => {
+      const matchingItem = trackedBuyIds.find((item) => getIdValue(item) === idValue);
+      return {
+        id: idValue,
+        buy_price: parseNumeric(matchingItem?.buy_price, unitPrice)
+      };
+    });
 
     if (trackedBuyIds.length !== uniqueIncoming.length) {
       await client.query("ROLLBACK");
@@ -449,7 +469,9 @@ async function buyProduct(req, res) {
       const newIds = [...currentIds, ...uniqueIncoming];
       const purchasedCount = uniqueIncoming.length;
       const newStock = product.stock + purchasedCount;
-      const purchaseAmount = unitPrice * purchasedCount;
+      
+      // Calculate total purchase amount from individual prices
+      const purchaseAmount = uniqueIncoming.reduce((sum, item) => sum + parseNumeric(item.buy_price, 0), 0);
 
       await applyBuyFinanceEntry(
         purchaseAmount,
@@ -464,7 +486,10 @@ async function buyProduct(req, res) {
       );
 
       for (let index = 0; index < uniqueIncoming.length; index += 1) {
-        const idValue = getIdValue(uniqueIncoming[index]);
+        const incomingItem = uniqueIncoming[index];
+        const idValue = getIdValue(incomingItem);
+        const idBuyPrice = parseNumeric(incomingItem.buy_price, unitPrice);
+        
         await logItemReport(client, {
           productId,
           itemId: idValue,
@@ -473,9 +498,9 @@ async function buyProduct(req, res) {
           batchName: null,
           type: "buy",
           quantity: 1,
-          buyPrice: unitPrice,
+          buyPrice: idBuyPrice,
           sellPrice: null,
-          price: unitPrice,
+          price: idBuyPrice,
           profit: 0,
           remainingStock: product.stock + index + 1,
         });

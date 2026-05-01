@@ -44,29 +44,74 @@ export default function BuyPage() {
   }, [productIsTracked, selectedProduct]);
 
   const isTracked = mode === "id";
-  const totalPrice = Number(price || selectedProduct?.default_price || 0);
-  const units = isTracked
-    ? idsText
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean).length
-    : Number(quantity) || 1;
+  const fallbackUnitPrice = Number(price || selectedProduct?.default_price || 0);
+
+  // Calculate units and total price based on input format
+  let units = 0;
+  let calculatedTotal = 0;
+  
+  if (isTracked) {
+    const parts = idsText
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    
+    units = parts.length;
+    for (const part of parts) {
+      if (part.includes(":")) {
+        const [, priceStr] = part.split(":").map((p) => p.trim());
+        const idPrice = parseFloat(priceStr) || fallbackUnitPrice;
+        calculatedTotal += idPrice;
+      } else {
+        calculatedTotal += fallbackUnitPrice;
+      }
+    }
+  } else {
+    units = Number(quantity) || 1;
+    calculatedTotal = fallbackUnitPrice * units;
+  }
 
   async function onSubmit(event) {
     event.preventDefault();
     if (!selectedId) return;
 
-    const ids = idsText
-      .split(",")
-      .map((part) => part.trim())
-      .filter(Boolean)
-      .map((idValue) => ({ id: idValue }));
+    let ids = [];
+    let purchaseAmount = 0;
+
+    if (isTracked) {
+      // Parse ID:price format: "ID1:100, ID2:150, ID3:200"
+      const parts = idsText
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+
+      for (const part of parts) {
+        if (part.includes(":")) {
+          const [id, priceStr] = part.split(":").map((p) => p.trim());
+          const idPrice = parseFloat(priceStr) || fallbackUnitPrice;
+          if (id) {
+            ids.push({ id, buy_price: idPrice });
+            purchaseAmount += idPrice;
+          }
+        } else {
+          // Fallback to editable unit price if no price is specified in ID:price format
+          ids.push({ id: part, buy_price: fallbackUnitPrice });
+          purchaseAmount += fallbackUnitPrice;
+        }
+      }
+
+      if (ids.length === 0) {
+        alert("Please enter at least one ID");
+        return;
+      }
+    } else {
+      purchaseAmount = fallbackUnitPrice * (Number(quantity) || 1);
+    }
 
     const payload = isTracked
       ? {
           mode: "id",
           ids,
-          price: totalPrice,
           payment_source: paymentSource,
           supplier_name: paymentSource === "credit" ? supplierName.trim() : undefined,
         }
@@ -74,11 +119,10 @@ export default function BuyPage() {
           mode: "bulk",
           batch_name: batchName.trim(),
           quantity: Number(quantity),
-          price: totalPrice,
+          price: fallbackUnitPrice,
           payment_source: paymentSource,
           supplier_name: paymentSource === "credit" ? supplierName.trim() : undefined,
         };
-    const purchaseAmount = totalPrice * units;
 
     if (paymentSource === "bank" && Number(financeSummary.balance || 0) < purchaseAmount) {
       alert("Your balance is low. Use credit.");
@@ -130,14 +174,17 @@ export default function BuyPage() {
             </div>
 
             {isTracked ? (
-              <InputField
-                label={t("buy.idsTracked")}
-                type="text"
-                placeholder="ID1, ID2, ID3"
-                value={idsText}
-                onChange={(e) => setIdsText(e.target.value)}
-                required
-              />
+              <div>
+                <InputField
+                  label={t("buy.idsTracked")}
+                  type="text"
+                  placeholder="ID1:100, ID2:150, ID3:200"
+                  value={idsText}
+                  onChange={(e) => setIdsText(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-slate-500 mt-2">Format: ID:price (use default price if no price specified)</p>
+              </div>
             ) : (
               <>
                 <InputField
@@ -233,13 +280,15 @@ export default function BuyPage() {
                     <span className="text-slate-600">{isTracked ? "IDs" : "Quantity"}</span>
                     <span className="font-semibold text-slate-900">{units}</span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-slate-600">Unit Price</span>
-                    <span className="font-semibold text-slate-900">Rs {totalPrice.toFixed(2)}</span>
-                  </div>
+                  {!isTracked && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-600">Unit Price</span>
+                      <span className="font-semibold text-slate-900">Rs {fallbackUnitPrice.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between border-t border-slate-200 pt-3">
                     <span className="font-semibold text-slate-900">Total</span>
-                    <span className="text-2xl font-bold text-blue-600">Rs {(totalPrice * units).toFixed(2)}</span>
+                    <span className="text-2xl font-bold text-blue-600">Rs {calculatedTotal.toFixed(2)}</span>
                   </div>
 
                   <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm">
