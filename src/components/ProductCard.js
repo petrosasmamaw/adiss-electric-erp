@@ -9,8 +9,13 @@ function formatId(item) {
 
   const idValue = item.id || "";
   const buyPrice = Number(item.buy_price || 0);
+  const withoutReceipt = item?.has_receipt === false ? " (without receipt)" : "";
 
-  return buyPrice > 0 ? `${idValue} (Rs ${buyPrice.toFixed(2)})` : idValue;
+  if (buyPrice > 0) {
+    return `${idValue} (Rs ${buyPrice.toFixed(2)})${withoutReceipt}`;
+  }
+
+  return `${idValue}${withoutReceipt}`;
 }
 
 export default function ProductCard({ product, onDelete, deleting = false }) {
@@ -90,7 +95,7 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
             <div className="space-y-1.5 text-xs text-slate-700">
               {batches.slice(0, 3).map((batch) => (
                 <div key={batch.id} className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{batch.batch_name || `Batch ${batch.batch_no}`}</span>
+                  <span className="font-medium">{batch.batch_name || `Batch ${batch.batch_no}`}{batch.has_receipt ? "" : " (without receipt)"}</span>
                   <span className="text-slate-500">
                     {batch.remaining_quantity}/{batch.quantity} @ Rs {Number(batch.buy_price || 0).toFixed(0)}
                   </span>

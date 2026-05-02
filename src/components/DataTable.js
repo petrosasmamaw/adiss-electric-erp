@@ -1,4 +1,4 @@
-export default function DataTable({ columns, data, className = "", striped = true }) {
+export default function DataTable({ columns, data, className = "", striped = true, rowClassName }) {
   return (
     <div className="overflow-x-auto">
       <table className={`w-full min-w-max text-left text-sm ${className}`}>
@@ -21,7 +21,7 @@ export default function DataTable({ columns, data, className = "", striped = tru
                 key={row.id || idx}
                 className={`border-b border-slate-100 transition-colors ${
                   striped && idx % 2 === 0 ? "bg-slate-50/30" : ""
-                } hover:bg-slate-50`}
+                } hover:bg-slate-50 ${typeof rowClassName === "function" ? rowClassName(row) : ""}`}
               >
                 {columns.map((col) => (
                   <td key={col.key} className="px-4 py-3">

@@ -46,8 +46,19 @@ export default function ReportsPage() {
     },
     {
       key: "batch_no",
-      label: "Batch",
-      render: (row) => (row.batch_name || (row.batch_no ? `Batch ${row.batch_no}` : "—")),
+      label: "Batch / ID",
+      render: (row) => {
+        if (row.item_id) {
+          return `${row.item_id}${row.has_receipt ? "" : " (without receipt)"}`;
+        }
+
+        if (row.batch_name || row.batch_no) {
+          const name = row.batch_name || `Batch ${row.batch_no}`;
+          return `${name}${row.has_receipt ? "" : " (without receipt)"}`;
+        }
+
+        return "—";
+      },
     },
     {
       key: "type",
@@ -159,7 +170,11 @@ export default function ReportsPage() {
       {/* Reports Table */}
       <Card variant="elevated" className="p-6">
         <h3 className="text-lg font-bold text-slate-900 mb-4">{t("reports.transactions")}</h3>
-        <DataTable columns={tableColumns} data={reports} />
+        <DataTable
+          columns={tableColumns}
+          data={reports}
+          rowClassName={(row) => row.receipt_mismatch ? "!bg-rose-100 hover:!bg-rose-100" : ""}
+        />
         {reports.length === 0 && (
           <div className="text-center py-12">
             <p className="text-slate-500">{t("reports.noReports")}</p>

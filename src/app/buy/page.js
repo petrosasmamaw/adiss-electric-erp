@@ -20,6 +20,7 @@ export default function BuyPage() {
   const [quantity, setQuantity] = useState("1");
   const [idsText, setIdsText] = useState("");
   const [price, setPrice] = useState("");
+  const [hasReceipt, setHasReceipt] = useState(true);
   const [paymentSource, setPaymentSource] = useState("credit");
   const [supplierName, setSupplierName] = useState("");
 
@@ -112,6 +113,7 @@ export default function BuyPage() {
       ? {
           mode: "id",
           ids,
+          has_receipt: hasReceipt,
           payment_source: paymentSource,
           supplier_name: paymentSource === "credit" ? supplierName.trim() : undefined,
         }
@@ -120,6 +122,7 @@ export default function BuyPage() {
           batch_name: batchName.trim(),
           quantity: Number(quantity),
           price: fallbackUnitPrice,
+          has_receipt: hasReceipt,
           payment_source: paymentSource,
           supplier_name: paymentSource === "credit" ? supplierName.trim() : undefined,
         };
@@ -135,6 +138,7 @@ export default function BuyPage() {
       setIdsText("");
       setBatchName("");
       setPrice("");
+      setHasReceipt(true);
       setSupplierName("");
     } catch (error) {
       alert(error?.message || "Failed to process buy");
@@ -215,6 +219,16 @@ export default function BuyPage() {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
             />
+
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={hasReceipt}
+                onChange={(e) => setHasReceipt(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+              />
+              This purchase has receipt
+            </label>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("buy.paymentSource")}</label>

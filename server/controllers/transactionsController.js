@@ -33,6 +33,8 @@ async function getTransactions(req, res) {
           p.name AS product_name,
           t.type,
           t.amount,
+          t.has_receipt,
+          t.receipt_mismatch,
           t.ethiopian_date,
           t.created_at
         FROM transactions t

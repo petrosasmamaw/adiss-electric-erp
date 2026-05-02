@@ -100,6 +100,8 @@ async function getFinanceReports(req, res) {
           source,
           reference_type,
           reference_id,
+          has_receipt,
+          receipt_mismatch,
           balance_after,
           credit_after,
           created_at

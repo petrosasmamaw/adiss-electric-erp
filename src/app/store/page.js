@@ -26,6 +26,7 @@ export default function StorePage() {
     stock: "",
     default_price: "",
     idsText: "",
+    has_receipt: true,
     image_url: defaultImage,
   });
 
@@ -67,6 +68,7 @@ export default function StorePage() {
       mode: isTrackedMode ? "id" : "bulk",
       default_price: Number(form.default_price || 0),
       image_url: form.image_url || defaultImage,
+      has_receipt: Boolean(form.has_receipt),
       ids,
     };
 
@@ -89,6 +91,7 @@ export default function StorePage() {
       stock: "",
       default_price: "",
       idsText: "",
+      has_receipt: true,
       image_url: defaultImage,
     });
   }
@@ -193,6 +196,16 @@ export default function StorePage() {
               onChange={(e) => setForm((prev) => ({ ...prev, default_price: e.target.value }))}
               required
             />
+
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={Boolean(form.has_receipt)}
+                onChange={(e) => setForm((prev) => ({ ...prev, has_receipt: e.target.checked }))}
+                className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
+              />
+              Create with receipt
+            </label>
 
             <InputField
               label={t("store.imageUrl")}

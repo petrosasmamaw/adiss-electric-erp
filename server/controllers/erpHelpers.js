@@ -23,6 +23,20 @@ function parseNumeric(value, fallback = 0) {
   return parsed;
 }
 
+function parseBoolean(value, fallback = true) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+
+  return fallback;
+}
+
 function getRangeClause(range) {
   if (range === "today") {
     return "AND created_at::date = CURRENT_DATE";
@@ -39,14 +53,14 @@ function getRangeClause(range) {
   return "";
 }
 
-async function logTransaction(client, productId, type, amount) {
+async function logTransaction(client, productId, type, amount, { hasReceipt = true, receiptMismatch = false } = {}) {
   const ethiopianDate = getCurrentEthiopianDate();
   await client.query(
     `
-      INSERT INTO transactions (product_id, type, amount, ethiopian_date)
-      VALUES ($1, $2, $3, $4)
+      INSERT INTO transactions (product_id, type, amount, ethiopian_date, has_receipt, receipt_mismatch)
+      VALUES ($1, $2, $3, $4, $5, $6)
     `,
-    [productId, type, amount, ethiopianDate]
+    [productId, type, amount, ethiopianDate, hasReceipt, receiptMismatch]
   );
 }
 
@@ -62,7 +76,18 @@ async function ensureFinanceAccountRow(client) {
 
 async function applyFinanceEntry(
   client,
-  { accountType, direction, amount, note, source, referenceType, referenceId, supplierName }
+  {
+    accountType,
+    direction,
+    amount,
+    note,
+    source,
+    referenceType,
+    referenceId,
+    supplierName,
+    hasReceipt = true,
+    receiptMismatch = false,
+  }
 ) {
   await ensureFinanceAccountRow(client);
 
@@ -157,10 +182,12 @@ async function applyFinanceEntry(
         source,
         reference_type,
         reference_id,
+        has_receipt,
+        receipt_mismatch,
         balance_after,
         credit_after
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     `,
     [
       accountType,
@@ -172,6 +199,8 @@ async function applyFinanceEntry(
       source || null,
       referenceType || null,
       referenceId || null,
+      hasReceipt,
+      receiptMismatch,
       nextBalance,
       nextCredit,
     ]
@@ -195,6 +224,8 @@ async function logItemReport(
     price,
     profit,
     remainingStock,
+    hasReceipt = true,
+    receiptMismatch = false,
   }
 ) {
   await client.query(
@@ -211,9 +242,11 @@ async function logItemReport(
         sell_price,
         price,
         profit,
-        remaining_stock
+        remaining_stock,
+        has_receipt,
+        receipt_mismatch
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
     `,
     [
       productId,
@@ -228,6 +261,8 @@ async function logItemReport(
       price ?? null,
       profit ?? 0,
       remainingStock,
+      hasReceipt,
+      receiptMismatch,
     ]
   );
 }
@@ -243,4 +278,5 @@ module.exports = {
   logItemReport,
   logTransaction,
   parseNumeric,
+  parseBoolean,
 };

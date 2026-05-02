@@ -36,6 +36,8 @@ async function getItemReports(req, res) {
           ir.sell_price,
           ir.price,
           ir.profit,
+          ir.has_receipt,
+          ir.receipt_mismatch,
           ir.remaining_stock,
           ir.created_at
         FROM item_reports ir

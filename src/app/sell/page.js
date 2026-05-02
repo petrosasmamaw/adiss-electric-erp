@@ -19,6 +19,7 @@ export default function SellPage() {
   const [itemId, setItemId] = useState("");
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [price, setPrice] = useState("");
+  const [hasReceipt, setHasReceipt] = useState(true);
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -70,6 +71,7 @@ export default function SellPage() {
     setQuantity("1");
     setItemId("");
     setSelectedBatchId("");
+    setHasReceipt(true);
   }, [selectedId]);
 
   useEffect(() => {
@@ -93,8 +95,8 @@ export default function SellPage() {
       .filter(Boolean);
 
       const payload = idList.length
-        ? { item_ids: idList, price: sellPrice }
-        : { quantity: Number(quantity), price: sellPrice };
+        ? { item_ids: idList, price: sellPrice, has_receipt: hasReceipt }
+        : { quantity: Number(quantity), price: sellPrice, has_receipt: hasReceipt };
 
       await dispatch(sellProduct({ productId: selectedId, payload }));
       setQuantity("1");
@@ -112,6 +114,7 @@ export default function SellPage() {
       batch_id: Number(selectedBatchId),
       quantity: Number(quantity),
       price: sellPrice,
+      has_receipt: hasReceipt,
     };
 
     await dispatch(sellProduct({ productId: selectedId, payload }));
@@ -170,7 +173,7 @@ export default function SellPage() {
                   <option value="">Select a batch</option>
                   {activeBatches.map((batch) => (
                     <option key={batch.id} value={batch.id}>
-                      {(batch.batch_name || `Batch ${batch.batch_no}`)} - {batch.remaining_quantity} left @ Rs {Number(batch.buy_price || 0).toFixed(2)}
+                      {(batch.batch_name || `Batch ${batch.batch_no}`)}{batch.has_receipt ? "" : " (without receipt)"} - {batch.remaining_quantity} left @ Rs {Number(batch.buy_price || 0).toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -199,6 +202,16 @@ export default function SellPage() {
               value={price}
               onChange={(e) => setPrice(e.target.value)}
             />
+
+            <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={hasReceipt}
+                onChange={(e) => setHasReceipt(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-400"
+              />
+              This sale has receipt
+            </label>
 
             {/* Submit Button */}
             <button
@@ -244,7 +257,7 @@ export default function SellPage() {
                           const idPrice = typeof item === 'object' ? item.buy_price : null;
                           return (
                             <span key={index} className="inline-block mr-2 mb-1 px-2 py-1 bg-white rounded border border-purple-200 text-xs font-mono">
-                              {idValue} {idPrice ? `(Rs ${Number(idPrice).toFixed(0)})` : ''}
+                              {idValue} {idPrice ? `(Rs ${Number(idPrice).toFixed(0)})` : ''}{item?.has_receipt === false ? " (without receipt)" : ""}
                             </span>
                           );
                         })}
@@ -258,7 +271,7 @@ export default function SellPage() {
                       <p className="text-xs uppercase tracking-widest text-sky-600 font-semibold">Selected Batch</p>
                       <p className="mt-1 text-lg font-bold text-slate-900">{selectedBatch.batch_name || `Batch ${selectedBatch.batch_no}`}</p>
                       <p className="text-sm text-slate-600">
-                        {selectedBatch.remaining_quantity} remaining at buy price Rs {Number(selectedBatch.buy_price || 0).toFixed(2)}
+                        {selectedBatch.remaining_quantity} remaining at buy price Rs {Number(selectedBatch.buy_price || 0).toFixed(2)}{selectedBatch.has_receipt ? "" : " (without receipt)"}
                       </p>
                     </div>
                   )}

@@ -3,10 +3,11 @@ const {
   getPool,
   logItemReport,
   logTransaction,
+  parseBoolean,
   parseNumeric,
 } = require("./erpHelpers");
 
-function normalizeIncomingIds(idsRaw, buyPrice = 0) {
+function normalizeIncomingIds(idsRaw, buyPrice = 0, hasReceipt = true) {
   if (!Array.isArray(idsRaw)) {
     return [];
   }
@@ -16,10 +17,15 @@ function normalizeIncomingIds(idsRaw, buyPrice = 0) {
       if (value && typeof value === "object") {
         const id = String(value.id || "").trim();
         const price = parseNumeric(value.buy_price, buyPrice);
-        return { id, buy_price: price };
+        const receipt = parseBoolean(value.has_receipt, hasReceipt);
+        return { id, buy_price: price, has_receipt: receipt };
       }
 
-      return { id: String(value || "").trim(), buy_price: buyPrice };
+      return {
+        id: String(value || "").trim(),
+        buy_price: buyPrice,
+        has_receipt: hasReceipt,
+      };
     })
     .filter((item) => Boolean(item.id));
 }
@@ -35,12 +41,14 @@ function normalizeStoredIds(idsRaw, fallbackBuyPrice = 0) {
         return {
           id: String(value.id || "").trim(),
           buy_price: parseNumeric(value.buy_price, fallbackBuyPrice),
+          has_receipt: parseBoolean(value.has_receipt, true),
         };
       }
 
       return {
         id: String(value || "").trim(),
         buy_price: fallbackBuyPrice,
+        has_receipt: true,
       };
     })
     .filter((item) => Boolean(item.id));
@@ -63,6 +71,7 @@ function normalizeBatches(batchesRaw = []) {
       quantity: Number(batch?.quantity || 0),
       remaining_quantity: Number(batch?.remaining_quantity || 0),
       buy_price: parseNumeric(batch?.buy_price, 0),
+      has_receipt: parseBoolean(batch?.has_receipt, true),
       created_at: batch?.created_at || null,
       updated_at: batch?.updated_at || null,
     }))
@@ -113,6 +122,7 @@ async function getProducts(req, res) {
                 'quantity', pb.quantity,
                 'remaining_quantity', pb.remaining_quantity,
                 'buy_price', pb.buy_price,
+                'has_receipt', pb.has_receipt,
                 'created_at', pb.created_at,
                 'updated_at', pb.updated_at
               )
@@ -147,6 +157,7 @@ async function createProduct(req, res) {
     stock: stockRaw,
     ids: idsRaw,
     batch_name: batchNameRaw,
+    has_receipt: hasReceiptRaw,
     image_url: imageUrl,
   } = req.body || {};
 
@@ -155,10 +166,11 @@ async function createProduct(req, res) {
   }
 
   const defaultPrice = parseNumeric(defaultPriceRaw, -1);
-  const ids = normalizeIncomingIds(idsRaw, defaultPrice);
+  const hasReceipt = parseBoolean(hasReceiptRaw, true);
+  const ids = normalizeIncomingIds(idsRaw, defaultPrice, hasReceipt);
   const idValues = ids.map(getIdValue);
   const uniqueValues = [...new Set(idValues)];
-  const uniqueIds = uniqueValues.map((idValue) => ({ id: idValue, buy_price: defaultPrice }));
+  const uniqueIds = uniqueValues.map((idValue) => ({ id: idValue, buy_price: defaultPrice, has_receipt: hasReceipt }));
   const requestedMode = String(modeRaw || "").trim().toLowerCase();
   const normalizedMode = requestedMode === "bulk" || requestedMode === "id" || requestedMode === "tracked"
     ? requestedMode
@@ -247,6 +259,7 @@ async function createProduct(req, res) {
               price: idBuyPrice,
               profit: 0,
               remainingStock: index + 1,
+              hasReceipt,
             });
           }
         } else {
@@ -260,12 +273,13 @@ async function createProduct(req, res) {
                 batch_name,
                 quantity,
                 remaining_quantity,
-                buy_price
+                buy_price,
+                has_receipt
               )
-              VALUES ($1, $2, $3, $4, $5, $6)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
               RETURNING id, batch_no
             `,
-            [product.id, batchNo, batchName, stock, stock, defaultPrice]
+            [product.id, batchNo, batchName, stock, stock, defaultPrice, hasReceipt]
           );
 
           const insertedBatch = batchRows[0];
@@ -283,6 +297,7 @@ async function createProduct(req, res) {
             price: defaultPrice,
             profit: 0,
             remainingStock: stock,
+            hasReceipt,
           });
         }
 
@@ -294,7 +309,7 @@ async function createProduct(req, res) {
           totalAmount = defaultPrice * stock;
         }
 
-        await logTransaction(client, product.id, "buy", totalAmount);
+        await logTransaction(client, product.id, "buy", totalAmount, { hasReceipt });
       }
 
       await client.query("COMMIT");
@@ -342,6 +357,7 @@ async function buyProduct(req, res) {
     ids: idsRaw,
     batch_name: batchNameRaw,
     price: priceRaw,
+    has_receipt: hasReceiptRaw,
     payment_source: paymentSourceRaw,
     supplier_name: supplierNameRaw,
   } = req.body || {};
@@ -367,6 +383,7 @@ async function buyProduct(req, res) {
 
     const product = rows[0];
     const unitPrice = parseNumeric(priceRaw, parseNumeric(product.default_price, 0));
+    const hasReceipt = parseBoolean(hasReceiptRaw, true);
     const paymentSourceInput = String(paymentSourceRaw || "credit").trim().toLowerCase();
     const paymentSource = paymentSourceInput === "balance" ? "bank" : paymentSourceInput;
     const supplierName = String(supplierNameRaw || "").trim();
@@ -405,7 +422,7 @@ async function buyProduct(req, res) {
       return res.status(400).json({ error: "This product is bulk. Use bulk mode." });
     }
 
-    const trackedBuyIds = normalizeIncomingIds(idsRaw, unitPrice);
+    const trackedBuyIds = normalizeIncomingIds(idsRaw, unitPrice, hasReceipt);
     const incomingValues = trackedBuyIds.map(getIdValue);
     const uniqueIncomingValues = [...new Set(incomingValues)];
     
@@ -414,7 +431,8 @@ async function buyProduct(req, res) {
       const matchingItem = trackedBuyIds.find((item) => getIdValue(item) === idValue);
       return {
         id: idValue,
-        buy_price: parseNumeric(matchingItem?.buy_price, unitPrice)
+        buy_price: parseNumeric(matchingItem?.buy_price, unitPrice),
+        has_receipt: parseBoolean(matchingItem?.has_receipt, hasReceipt),
       };
     });
 
@@ -452,6 +470,8 @@ async function buyProduct(req, res) {
           source: paymentSource === "credit" ? "buy-credit" : "buy-bank",
           referenceType: "product",
           referenceId: productId,
+          hasReceipt,
+          receiptMismatch: false,
         });
       } catch (error) {
         if (
@@ -503,10 +523,11 @@ async function buyProduct(req, res) {
           price: idBuyPrice,
           profit: 0,
           remainingStock: product.stock + index + 1,
+          hasReceipt: parseBoolean(incomingItem.has_receipt, hasReceipt),
         });
       }
 
-      await logTransaction(client, productId, "buy", purchaseAmount);
+      await logTransaction(client, productId, "buy", purchaseAmount, { hasReceipt, receiptMismatch: false });
       await client.query("COMMIT");
       return res.json({ ok: true });
     }
@@ -547,12 +568,13 @@ async function buyProduct(req, res) {
           batch_name,
           quantity,
           remaining_quantity,
-          buy_price
+          buy_price,
+          has_receipt
         )
-        VALUES ($1, $2, $3, $4, $5, $6)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING id, batch_no
       `,
-      [productId, batchNo, batchName, quantity, quantity, unitPrice]
+      [productId, batchNo, batchName, quantity, quantity, unitPrice, hasReceipt]
     );
 
     const insertedBatch = batchRows[0];
@@ -570,9 +592,10 @@ async function buyProduct(req, res) {
       price: unitPrice,
       profit: 0,
       remainingStock: newStock,
+      hasReceipt,
     });
 
-    await logTransaction(client, productId, "buy", purchaseAmount);
+    await logTransaction(client, productId, "buy", purchaseAmount, { hasReceipt, receiptMismatch: false });
     await client.query("COMMIT");
 
     return res.json({ ok: true });
@@ -596,6 +619,7 @@ async function sellProduct(req, res) {
     item_id: itemIdRaw,
     item_ids: itemIdsRaw,
     price: priceRaw,
+    has_receipt: hasReceiptRaw,
   } = req.body || {};
 
   if (!Number.isInteger(productId)) {
@@ -626,6 +650,7 @@ async function sellProduct(req, res) {
     }
 
     const unitPrice = parseNumeric(priceRaw, parseNumeric(product.default_price, 0));
+    const hasReceipt = parseBoolean(hasReceiptRaw, true);
     const currentValues = currentIds.map(getIdValue);
     const singleInput = itemIdRaw ? String(itemIdRaw).trim() : "";
     const fromSingle = singleInput
@@ -678,12 +703,19 @@ async function sellProduct(req, res) {
         source: "sell",
         referenceType: "product",
         referenceId: productId,
+        hasReceipt,
+        receiptMismatch: uniqueRequested.some((soldId) => {
+          const matchedItem = currentIds.find((item) => getIdValue(item) === soldId);
+          return hasReceipt && !parseBoolean(matchedItem?.has_receipt, true);
+        }),
       });
 
       for (let index = 0; index < uniqueRequested.length; index += 1) {
         const soldId = uniqueRequested[index];
         const matchedItem = currentIds.find((item) => getIdValue(item) === soldId);
         const buyPrice = parseNumeric(matchedItem?.buy_price, parseNumeric(product.default_price, 0));
+        const sourceHasReceipt = parseBoolean(matchedItem?.has_receipt, true);
+        const receiptMismatch = hasReceipt && !sourceHasReceipt;
         await logItemReport(client, {
           productId,
           itemId: soldId,
@@ -697,10 +729,18 @@ async function sellProduct(req, res) {
           price: unitPrice,
           profit: unitPrice - buyPrice,
           remainingStock: product.stock - (index + 1),
+          hasReceipt,
+          receiptMismatch,
         });
       }
 
-      await logTransaction(client, productId, "sell", saleAmount);
+      await logTransaction(client, productId, "sell", saleAmount, {
+        hasReceipt,
+        receiptMismatch: uniqueRequested.some((soldId) => {
+          const matchedItem = currentIds.find((item) => getIdValue(item) === soldId);
+          return hasReceipt && !parseBoolean(matchedItem?.has_receipt, true);
+        }),
+      });
       await client.query("COMMIT");
       return res.json({ ok: true });
     }
@@ -720,7 +760,7 @@ async function sellProduct(req, res) {
 
     const { rows: batchRows } = await client.query(
       `
-        SELECT id, batch_no, batch_name, quantity, remaining_quantity, buy_price
+        SELECT id, batch_no, batch_name, quantity, remaining_quantity, buy_price, has_receipt
         FROM product_batches
         WHERE product_id = $1 AND remaining_quantity > 0
         ORDER BY batch_no ASC, created_at ASC
@@ -747,6 +787,7 @@ async function sellProduct(req, res) {
     const newStock = product.stock - quantity;
     const saleAmount = unitPrice * quantity;
     const newRemaining = selectedBatch.remaining_quantity - quantity;
+    const receiptMismatch = hasReceipt && !parseBoolean(selectedBatch.has_receipt, true);
 
     await client.query(
       `UPDATE products SET stock = $1, updated_at = NOW() WHERE id = $2`,
@@ -774,6 +815,8 @@ async function sellProduct(req, res) {
       source: "sell",
       referenceType: "product",
       referenceId: productId,
+      hasReceipt,
+      receiptMismatch,
     });
 
     await logItemReport(client, {
@@ -789,9 +832,11 @@ async function sellProduct(req, res) {
       price: unitPrice,
       profit: (unitPrice - selectedBatch.buy_price) * quantity,
       remainingStock: newStock,
+      hasReceipt,
+      receiptMismatch,
     });
 
-    await logTransaction(client, productId, "sell", saleAmount);
+    await logTransaction(client, productId, "sell", saleAmount, { hasReceipt, receiptMismatch });
     await client.query("COMMIT");
     return res.json({ ok: true });
   } catch (_error) {

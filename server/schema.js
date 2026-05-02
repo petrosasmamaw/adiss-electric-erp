@@ -43,6 +43,7 @@ async function initSchema() {
   `);
 
   await pool.query(`ALTER TABLE product_batches ADD COLUMN IF NOT EXISTS batch_name TEXT;`);
+    await pool.query(`ALTER TABLE product_batches ADD COLUMN IF NOT EXISTS has_receipt BOOLEAN NOT NULL DEFAULT TRUE;`);
 
   await pool.query(`
     UPDATE product_batches
@@ -71,6 +72,14 @@ async function initSchema() {
                 ''
               )::numeric,
               default_price
+            ),
+            'has_receipt',
+            COALESCE(
+              CASE
+                WHEN jsonb_typeof(item) = 'object' THEN (item->>'has_receipt')::boolean
+                ELSE NULL
+              END,
+              true
             )
           )
         )
@@ -130,6 +139,16 @@ async function initSchema() {
     ADD COLUMN IF NOT EXISTS batch_name TEXT;
   `);
 
+    await pool.query(`
+      ALTER TABLE item_reports
+      ADD COLUMN IF NOT EXISTS has_receipt BOOLEAN NOT NULL DEFAULT TRUE;
+    `);
+
+    await pool.query(`
+      ALTER TABLE item_reports
+      ADD COLUMN IF NOT EXISTS receipt_mismatch BOOLEAN NOT NULL DEFAULT FALSE;
+    `);
+
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS buy_price NUMERIC(12, 2) NOT NULL DEFAULT 0;`);
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS sell_price NUMERIC(12, 2);`);
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS profit NUMERIC(12, 2) NOT NULL DEFAULT 0;`);
@@ -146,6 +165,8 @@ async function initSchema() {
   `);
 
   await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS ethiopian_date TEXT;`);
+    await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS has_receipt BOOLEAN NOT NULL DEFAULT TRUE;`);
+    await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS receipt_mismatch BOOLEAN NOT NULL DEFAULT FALSE;`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS finance_accounts (
@@ -182,6 +203,8 @@ async function initSchema() {
 
   await pool.query(`ALTER TABLE finance_reports ADD COLUMN IF NOT EXISTS ethiopian_date TEXT;`);
   await pool.query(`ALTER TABLE finance_reports ADD COLUMN IF NOT EXISTS supplier_name TEXT;`);
+    await pool.query(`ALTER TABLE finance_reports ADD COLUMN IF NOT EXISTS has_receipt BOOLEAN NOT NULL DEFAULT TRUE;`);
+    await pool.query(`ALTER TABLE finance_reports ADD COLUMN IF NOT EXISTS receipt_mismatch BOOLEAN NOT NULL DEFAULT FALSE;`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS supplier_credits (

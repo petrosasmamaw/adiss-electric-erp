@@ -57,6 +57,11 @@ export default function DashboardPage() {
         <span className="font-semibold text-slate-900">{asCurrency(row.amount)}</span>
       ),
     },
+    {
+      key: "has_receipt",
+      label: "Receipt",
+      render: (row) => (row.has_receipt ? "With receipt" : "Without receipt"),
+    },
   ];
 
   return (
@@ -138,7 +143,11 @@ export default function DashboardPage() {
         />
 
         <Card variant="elevated" className="p-6 mt-4">
-          <DataTable columns={tableColumns} data={transactions} />
+          <DataTable
+            columns={tableColumns}
+            data={transactions}
+            rowClassName={(row) => row.receipt_mismatch ? "!bg-rose-100 hover:!bg-rose-100" : ""}
+          />
           {transactions.length === 0 && (
             <div className="text-center py-12">
               <p className="text-slate-500 text-sm">{t("dashboard.noTransactions")}</p>

@@ -118,6 +118,11 @@ export default function BalancePage() {
       render: (row) => row.supplier_name || "-",
     },
     {
+      key: "has_receipt",
+      label: "Receipt",
+      render: (row) => (row.has_receipt ? "With receipt" : "Without receipt"),
+    },
+    {
       key: "balance_after",
       label: t("balance.balanceAfter"),
       render: (row) => <span className="font-semibold text-slate-900">{asCurrency(row.balance_after)}</span>,
@@ -301,7 +306,11 @@ export default function BalancePage() {
 
           <Card variant="elevated" className="p-6">
             <h3 className="mb-4 text-lg font-bold text-slate-900">{t("balance.reportsTitle")}</h3>
-            <DataTable columns={reportColumns} data={financeReports} />
+            <DataTable
+              columns={reportColumns}
+              data={financeReports}
+              rowClassName={(row) => row.receipt_mismatch ? "!bg-rose-100 hover:!bg-rose-100" : ""}
+            />
           </Card>
         </div>
       </div>
