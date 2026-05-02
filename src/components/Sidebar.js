@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -50,13 +49,10 @@ export default function Sidebar({ t, isOpen, onClose }) {
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/40">
             <div className="flex items-center gap-2">
               <div className="relative h-9 w-9 overflow-hidden rounded-lg border border-slate-500/40 bg-white">
-                <Image
+                <img
                   src="/adiss-logo.png"
                   alt="Adiss Electric logo"
-                  fill
-                  className="object-contain p-1"
-                  sizes="36px"
-                  priority
+                  className="h-full w-full object-contain p-1"
                 />
               </div>
               <div>
