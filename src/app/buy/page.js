@@ -102,7 +102,7 @@ export default function BuyPage() {
       }
 
       if (ids.length === 0) {
-        alert("Please enter at least one ID");
+        alert(t("buy.enterAtLeastOneId"));
         return;
       }
     } else {
@@ -128,7 +128,7 @@ export default function BuyPage() {
         };
 
     if (paymentSource === "bank" && Number(financeSummary.balance || 0) < purchaseAmount) {
-      alert("Your balance is low. Use credit.");
+      alert(t("buy.lowBalance"));
       return;
     }
 
@@ -141,7 +141,7 @@ export default function BuyPage() {
       setHasReceipt(true);
       setSupplierName("");
     } catch (error) {
-      alert(error?.message || "Failed to process buy");
+      alert(error?.message || t("buy.failed"));
     }
   }
 
@@ -160,20 +160,20 @@ export default function BuyPage() {
               products={products}
               value={selectedId}
               onChange={setSelectedId}
-              searchPlaceholder="Search items to buy..."
-              noResultsText="No products match your search."
+              searchPlaceholder={t("buy.searchPlaceholder")}
+              noResultsText={t("buy.noSearchResults")}
             />
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Mode</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.mode")}</label>
               <select
                 value={mode}
                 onChange={(e) => setMode(e.target.value)}
                 className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
                 disabled={!selectedProduct}
               >
-                <option value="bulk" disabled={selectedProduct ? productIsTracked : false}>Bulk</option>
-                <option value="id" disabled={selectedProduct ? !productIsTracked : false}>By ID</option>
+                <option value="bulk" disabled={selectedProduct ? productIsTracked : false}>{t("common.bulk")}</option>
+                <option value="id" disabled={selectedProduct ? !productIsTracked : false}>{t("common.byId")}</option>
               </select>
             </div>
 
@@ -182,18 +182,18 @@ export default function BuyPage() {
                 <InputField
                   label={t("buy.idsTracked")}
                   type="text"
-                  placeholder="ID1:100, ID2:150, ID3:200"
+                  placeholder={t("buy.idsPricePlaceholder")}
                   value={idsText}
                   onChange={(e) => setIdsText(e.target.value)}
                   required
                 />
-                <p className="text-xs text-slate-500 mt-2">Format: ID:price (use default price if no price specified)</p>
+                <p className="text-xs text-slate-500 mt-2">{t("buy.idsFormatHint")}</p>
               </div>
             ) : (
               <>
                 <InputField
-                  label="Batch Name"
-                  placeholder="Batch 1"
+                  label={t("common.batchName")}
+                  placeholder={`${t("common.batch")} 1`}
                   value={batchName}
                   onChange={(e) => setBatchName(e.target.value)}
                   required
@@ -227,7 +227,7 @@ export default function BuyPage() {
                 onChange={(e) => setHasReceipt(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
               />
-              This purchase has receipt
+              {t("buy.purchaseHasReceipt")}
             </label>
 
             <div>
@@ -245,7 +245,7 @@ export default function BuyPage() {
             {paymentSource === "credit" && (
               <InputField
                 label={t("buy.supplierName")}
-                placeholder="Supplier name"
+                placeholder={t("buy.supplierPlaceholder")}
                 value={supplierName}
                 onChange={(e) => setSupplierName(e.target.value)}
               />
@@ -256,7 +256,7 @@ export default function BuyPage() {
               type="submit"
               className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-cyan-600 px-4 py-3 font-semibold text-white transition-all duration-200 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {actionLoading ? "Processing..." : "Complete Purchase"}
+              {actionLoading ? t("buy.processing") : t("buy.completePurchase")}
             </button>
           </form>
         </Card>
@@ -267,18 +267,18 @@ export default function BuyPage() {
               <Card variant="gradient" className="p-8">
                 <div className="space-y-6">
                   <div>
-                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-600">Selected Product</p>
+                    <p className="text-xs font-semibold uppercase tracking-widest text-slate-600">{t("common.selectedProduct")}</p>
                     <h4 className="mt-2 text-3xl font-bold text-slate-900">{selectedProduct.name}</h4>
                     <p className="mt-1 text-slate-600">{selectedProduct.category}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="rounded-xl border border-blue-200 bg-blue-50 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">Stock</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-blue-600">{t("common.stock")}</p>
                       <p className="mt-1 text-2xl font-bold text-blue-700">{selectedProduct.stock}</p>
                     </div>
                     <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-                      <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">Default Price</p>
+                      <p className="text-xs font-semibold uppercase tracking-widest text-emerald-600">{t("productCard.defaultPrice")}</p>
                       <p className="mt-1 text-2xl font-bold text-emerald-700">
                         Rs {Number(selectedProduct.default_price || 0).toFixed(0)}
                       </p>
@@ -288,31 +288,31 @@ export default function BuyPage() {
               </Card>
 
               <Card variant="elevated" className="p-6">
-                <h4 className="mb-4 text-lg font-bold text-slate-900">Order Summary</h4>
+                <h4 className="mb-4 text-lg font-bold text-slate-900">{t("buy.orderSummary")}</h4>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-600">{isTracked ? "IDs" : "Quantity"}</span>
+                    <span className="text-slate-600">{isTracked ? t("common.ids") : t("common.quantity")}</span>
                     <span className="font-semibold text-slate-900">{units}</span>
                   </div>
                   {!isTracked && (
                     <div className="flex items-center justify-between">
-                      <span className="text-slate-600">Unit Price</span>
+                      <span className="text-slate-600">{t("common.unitPrice")}</span>
                       <span className="font-semibold text-slate-900">Rs {fallbackUnitPrice.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex items-center justify-between border-t border-slate-200 pt-3">
-                    <span className="font-semibold text-slate-900">Total</span>
+                    <span className="font-semibold text-slate-900">{t("common.total")}</span>
                     <span className="text-2xl font-bold text-blue-600">Rs {calculatedTotal.toFixed(2)}</span>
                   </div>
 
                   <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm">
                     <div className="flex justify-between text-slate-600">
-                      <span>Payment:</span>
-                      <span className="capitalize font-medium text-slate-900">{paymentSource}</span>
+                      <span>{t("buy.paymentSource")}:</span>
+                      <span className="capitalize font-medium text-slate-900">{paymentSource === "credit" ? t("buy.credit") : t("buy.bank")}</span>
                     </div>
                     {paymentSource === "credit" && (
                       <div className="flex justify-between text-slate-600">
-                        <span>Supplier:</span>
+                        <span>{t("balance.supplier")}:</span>
                         <span className="font-medium text-slate-900">{supplierName || "-"}</span>
                       </div>
                     )}
@@ -321,13 +321,13 @@ export default function BuyPage() {
               </Card>
 
               <Card variant="elevated" className="bg-gradient-to-br from-slate-50 to-blue-50 p-6">
-                <h4 className="mb-3 text-sm font-bold uppercase tracking-widest text-slate-700">Account Balance</h4>
+                <h4 className="mb-3 text-sm font-bold uppercase tracking-widest text-slate-700">{t("balance.accountBalance")}</h4>
                 <p className="text-3xl font-bold text-slate-900">Rs {Number(financeSummary.balance || 0).toFixed(2)}</p>
               </Card>
             </>
           ) : (
             <Card variant="elevated" className="p-12 text-center">
-              <p className="text-lg text-slate-500">{t("buy.selectProduct")}</p>
+              <p className="text-lg text-slate-500">{t("buy.selectProductHint")}</p>
             </Card>
           )}
         </div>

@@ -106,7 +106,7 @@ export default function SellPage() {
     }
 
     if (!selectedBatchId) {
-      alert("Please select a batch");
+      alert(t("sell.selectBatchAlert"));
       return;
     }
 
@@ -146,8 +146,8 @@ export default function SellPage() {
               products={products}
               value={selectedId}
               onChange={setSelectedId}
-              searchPlaceholder="Search items to sell..."
-              noResultsText="No products match your search."
+              searchPlaceholder={t("sell.searchPlaceholder")}
+              noResultsText={t("sell.noSearchResults")}
             />
 
             {/* Quantity */}
@@ -155,25 +155,25 @@ export default function SellPage() {
               <div>
                 <InputField
                   label={t("sell.idsTracked")}
-                  placeholder="ID1, ID2, ID3"
+                  placeholder={t("sell.idsPlaceholder")}
                   value={itemId}
                   onChange={(e) => setItemId(e.target.value)}
                 />
-                <p className="text-xs text-slate-500 mt-2">Enter the IDs you want to sell, separated by commas</p>
+                <p className="text-xs text-slate-500 mt-2">{t("sell.idsHint")}</p>
               </div>
             ) : (
               <div>
-                <label className="mb-2 block text-sm font-medium text-slate-700">Batch</label>
+                <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.batch")}</label>
                 <select
                   value={selectedBatchId}
                   onChange={(e) => setSelectedBatchId(e.target.value)}
                   className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-rose-400"
                   required
                 >
-                  <option value="">Select a batch</option>
+                  <option value="">{t("sell.selectBatch")}</option>
                   {activeBatches.map((batch) => (
                     <option key={batch.id} value={batch.id}>
-                      {(batch.batch_name || `Batch ${batch.batch_no}`)}{batch.has_receipt ? "" : " (without receipt)"} - {batch.remaining_quantity} left @ Rs {Number(batch.buy_price || 0).toFixed(2)}
+                      {(batch.batch_name || `${t("common.batch")} ${batch.batch_no}`)}{batch.has_receipt ? "" : ` (${t("common.withoutReceipt")})`} - {batch.remaining_quantity} {t("sell.left")} @ Rs {Number(batch.buy_price || 0).toFixed(2)}
                     </option>
                   ))}
                 </select>
@@ -186,7 +186,7 @@ export default function SellPage() {
                 label={t("sell.quantityBulk")}
                 type="number"
                 min="1"
-                placeholder="Enter quantity to sell"
+                placeholder={t("sell.quantityPlaceholder")}
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
               />
@@ -210,7 +210,7 @@ export default function SellPage() {
                 onChange={(e) => setHasReceipt(e.target.checked)}
                 className="h-4 w-4 rounded border-slate-300 text-rose-600 focus:ring-rose-400"
               />
-              This sale has receipt
+              {t("sell.saleHasReceipt")}
             </label>
 
             {/* Submit Button */}
@@ -219,7 +219,7 @@ export default function SellPage() {
               type="submit"
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {actionLoading ? "⏳ Processing..." : "💰 Process Sale"}
+              {actionLoading ? `⏳ ${t("sell.processing")}` : `💰 ${t("sell.processSale")}`}
             </button>
           </form>
         </Card>
@@ -232,46 +232,46 @@ export default function SellPage() {
               <Card variant="gradient" className="p-8">
                 <div className="space-y-6">
                   <div>
-                    <p className="text-xs uppercase tracking-widest text-slate-600 font-semibold">Selected Product</p>
+                    <p className="text-xs uppercase tracking-widest text-slate-600 font-semibold">{t("common.selectedProduct")}</p>
                     <h4 className="text-3xl font-bold text-slate-900 mt-2">{selectedProduct.name}</h4>
                     <p className="text-slate-600 mt-1">{selectedProduct.category}</p>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="px-4 py-3 rounded-xl bg-emerald-50 border border-emerald-200">
-                      <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">Stock</p>
+                      <p className="text-xs uppercase tracking-widest text-emerald-600 font-semibold">{t("common.stock")}</p>
                       <p className="text-2xl font-bold text-emerald-700 mt-1">{selectedProduct.stock}</p>
                     </div>
                     <div className="px-4 py-3 rounded-xl bg-amber-50 border border-amber-200">
-                      <p className="text-xs uppercase tracking-widest text-amber-600 font-semibold">Default Price</p>
+                      <p className="text-xs uppercase tracking-widest text-amber-600 font-semibold">{t("productCard.defaultPrice")}</p>
                       <p className="text-2xl font-bold text-amber-700 mt-1">Rs {Number(selectedProduct.default_price).toFixed(0)}</p>
                     </div>
                   </div>
 
                   {isTrackedProduct && Array.isArray(selectedProduct.ids) && selectedProduct.ids.length > 0 && (
                     <div className="rounded-xl border border-purple-200 bg-purple-50 px-4 py-3">
-                      <p className="text-xs uppercase tracking-widest text-purple-600 font-semibold">Available IDs</p>
+                      <p className="text-xs uppercase tracking-widest text-purple-600 font-semibold">{t("sell.availableIds")}</p>
                       <p className="mt-2 text-sm text-slate-700 max-h-24 overflow-y-auto">
                         {selectedProduct.ids.map((item, index) => {
                           const idValue = typeof item === 'object' ? item.id : item;
                           const idPrice = typeof item === 'object' ? item.buy_price : null;
                           return (
                             <span key={index} className="inline-block mr-2 mb-1 px-2 py-1 bg-white rounded border border-purple-200 text-xs font-mono">
-                              {idValue} {idPrice ? `(Rs ${Number(idPrice).toFixed(0)})` : ''}{item?.has_receipt === false ? " (without receipt)" : ""}
+                              {idValue} {idPrice ? `(Rs ${Number(idPrice).toFixed(0)})` : ''}{item?.has_receipt === false ? ` (${t("common.withoutReceipt")})` : ""}
                             </span>
                           );
                         })}
                       </p>
-                      <p className="text-xs text-purple-600 mt-2 font-semibold">Total: {selectedProduct.ids.length} items available</p>
+                      <p className="text-xs text-purple-600 mt-2 font-semibold">{t("common.total")}: {selectedProduct.ids.length} {t("sell.itemsAvailable")}</p>
                     </div>
                   )}
 
                   {!isTrackedProduct && selectedBatch && (
                     <div className="rounded-xl border border-sky-200 bg-sky-50 px-4 py-3">
-                      <p className="text-xs uppercase tracking-widest text-sky-600 font-semibold">Selected Batch</p>
-                      <p className="mt-1 text-lg font-bold text-slate-900">{selectedBatch.batch_name || `Batch ${selectedBatch.batch_no}`}</p>
+                      <p className="text-xs uppercase tracking-widest text-sky-600 font-semibold">{t("sell.selectedBatch")}</p>
+                      <p className="mt-1 text-lg font-bold text-slate-900">{selectedBatch.batch_name || `${t("common.batch")} ${selectedBatch.batch_no}`}</p>
                       <p className="text-sm text-slate-600">
-                        {selectedBatch.remaining_quantity} remaining at buy price Rs {Number(selectedBatch.buy_price || 0).toFixed(2)}{selectedBatch.has_receipt ? "" : " (without receipt)"}
+                        {selectedBatch.remaining_quantity} {t("sell.remainingAtBuyPrice")} Rs {Number(selectedBatch.buy_price || 0).toFixed(2)}{selectedBatch.has_receipt ? "" : ` (${t("common.withoutReceipt")})`}
                       </p>
                     </div>
                   )}
@@ -280,30 +280,30 @@ export default function SellPage() {
 
               {/* Order Summary */}
               <Card variant="elevated" className="p-6">
-                <h4 className="text-lg font-bold text-slate-900 mb-4">Sales Summary</h4>
+                <h4 className="text-lg font-bold text-slate-900 mb-4">{t("sell.salesSummary")}</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600">{isTrackedProduct ? "Item IDs" : "Quantity"}</span>
+                    <span className="text-slate-600">{isTrackedProduct ? t("sell.itemIds") : t("common.quantity")}</span>
                     <span className="font-semibold text-slate-900">{isTrackedProduct ? selectedTrackedIds.length : quantity}</span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Sell Price</span>
+                    <span className="text-slate-600">{t("sell.sellPrice")}</span>
                     <span className="font-semibold text-slate-900">Rs {sellPrice.toFixed(2)}</span>
                   </div>
                   <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
-                    <span className="font-semibold text-slate-900">Total Revenue</span>
+                    <span className="font-semibold text-slate-900">{t("sell.totalRevenue")}</span>
                     <span className="text-2xl font-bold text-emerald-600">Rs {(sellPrice * (isTrackedProduct ? selectedTrackedIds.length : Number(quantity) || 1)).toFixed(2)}</span>
                   </div>
 
                   <div className="mt-4 pt-4 border-t border-slate-200 space-y-2 text-sm">
                     <div className="flex justify-between text-slate-600">
-                      <span>Mode:</span>
-                      <span className="font-medium text-slate-900">{isTrackedProduct ? "Tracked" : "Bulk"}</span>
+                      <span>{t("common.mode")}:</span>
+                      <span className="font-medium text-slate-900">{isTrackedProduct ? t("common.tracked") : t("common.bulk")}</span>
                     </div>
                     {!isTrackedProduct && selectedBatch && (
                       <div className="flex justify-between text-slate-600">
-                        <span>Batch:</span>
-                        <span className="font-medium text-slate-900">{selectedBatch.batch_name || `Batch ${selectedBatch.batch_no}`}</span>
+                        <span>{t("common.batch")}:</span>
+                        <span className="font-medium text-slate-900">{selectedBatch.batch_name || `${t("common.batch")} ${selectedBatch.batch_no}`}</span>
                       </div>
                     )}
                   </div>
@@ -312,7 +312,7 @@ export default function SellPage() {
 
               {/* Profit Indicator */}
               <Card variant="elevated" className="p-6 bg-gradient-to-br from-slate-50 to-emerald-50">
-                <h4 className="text-sm font-bold text-slate-700 uppercase tracking-widest mb-3">Expected Profit</h4>
+                <h4 className="text-sm font-bold text-slate-700 uppercase tracking-widest mb-3">{t("sell.expectedProfit")}</h4>
                 <p className="text-3xl font-bold text-emerald-600">~Rs {(isTrackedProduct
                   ? (sellPrice * selectedTrackedIds.length - trackedCostTotal)
                   : ((sellPrice - (selectedBatch?.buy_price || selectedProduct.default_price || 0)) * (Number(quantity) || 1))

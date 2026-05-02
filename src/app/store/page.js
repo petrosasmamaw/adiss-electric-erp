@@ -124,7 +124,7 @@ export default function StorePage() {
 
             <InputField
               label={t("store.productName")}
-              placeholder="Laptop"
+              placeholder={t("store.productNamePlaceholder")}
               value={form.name}
               onChange={(e) => setForm((prev) => ({ ...prev, name: e.target.value }))}
               required
@@ -132,14 +132,14 @@ export default function StorePage() {
 
             <InputField
               label={t("store.category")}
-              placeholder="Electronics"
+              placeholder={t("store.categoryPlaceholder")}
               value={form.category}
               onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
               required
             />
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Mode</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.mode")}</label>
               <select
                 value={form.mode}
                 onChange={(e) =>
@@ -152,15 +152,15 @@ export default function StorePage() {
                 }
                 className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
               >
-                <option value="bulk">Bulk</option>
-                <option value="id">By ID</option>
+                <option value="bulk">{t("common.bulk")}</option>
+                <option value="id">{t("common.byId")}</option>
               </select>
             </div>
 
             {isTrackedMode ? (
               <InputField
                 label={t("store.idsInput")}
-                placeholder="ID1, ID2, ID3"
+                placeholder={t("store.idsPlaceholder")}
                 value={form.idsText}
                 onChange={(e) => setForm((prev) => ({ ...prev, idsText: e.target.value }))}
                 required
@@ -168,8 +168,8 @@ export default function StorePage() {
             ) : (
               <>
                 <InputField
-                  label="Batch Name"
-                  placeholder="Batch 1"
+                  label={t("common.batchName")}
+                  placeholder={`${t("common.batch")} 1`}
                   value={form.batch_name}
                   onChange={(e) => setForm((prev) => ({ ...prev, batch_name: e.target.value }))}
                   required
@@ -204,12 +204,12 @@ export default function StorePage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, has_receipt: e.target.checked }))}
                 className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-400"
               />
-              Create with receipt
+              {t("common.createWithReceipt")}
             </label>
 
             <InputField
               label={t("store.imageUrl")}
-              placeholder="https://..."
+              placeholder={t("store.imagePlaceholder")}
               value={form.image_url}
               onChange={(e) => setForm((prev) => ({ ...prev, image_url: e.target.value }))}
             />
@@ -219,7 +219,7 @@ export default function StorePage() {
               type="submit"
               className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {actionLoading ? "✓ Creating..." : "➕ Add Product"}
+              {actionLoading ? `✓ ${t("store.saving")}` : `➕ ${t("store.addProduct")}`}
             </button>
           </form>
         </Card>

@@ -39,7 +39,7 @@ export default function AppShell({ children }) {
           </main>
 
           <footer className="border-t border-slate-200/40 bg-white/30 px-4 py-4 text-center text-xs text-slate-500 backdrop-blur-sm md:px-6">
-            <p>© 2026 Electric ERP System. All rights reserved.</p>
+            <p>{t("nav.footer")}</p>
           </footer>
         </div>
       </div>

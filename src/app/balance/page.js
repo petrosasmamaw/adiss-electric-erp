@@ -90,7 +90,7 @@ export default function BalancePage() {
       label: t("balance.account"),
       render: (row) => (
         <span className="rounded-lg bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-700">
-          {row.account_type === "balance" ? "Balance" : "Credit"}
+          {row.account_type === "balance" ? t("common.balance") : t("common.credit")}
         </span>
       ),
     },
@@ -103,7 +103,7 @@ export default function BalancePage() {
             row.direction === "in" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
           }`}
         >
-          {row.direction === "in" ? "IN" : "OUT"}
+          {row.direction === "in" ? t("common.in") : t("common.out")}
         </span>
       ),
     },
@@ -119,8 +119,8 @@ export default function BalancePage() {
     },
     {
       key: "has_receipt",
-      label: "Receipt",
-      render: (row) => (row.has_receipt ? "With receipt" : "Without receipt"),
+      label: t("common.receipt"),
+      render: (row) => (row.has_receipt ? t("common.withReceipt") : t("common.withoutReceipt")),
     },
     {
       key: "balance_after",
@@ -179,7 +179,7 @@ export default function BalancePage() {
                       type="number"
                       min="0.01"
                       step="0.01"
-                      placeholder="Pay amount"
+                      placeholder={t("balance.payAmountPlaceholder")}
                       value={payAmounts[row.supplier_name] || ""}
                       onChange={(e) =>
                         setPayAmounts((prev) => ({
@@ -194,7 +194,7 @@ export default function BalancePage() {
                       onClick={() => onPayCredit(row.supplier_name)}
                       disabled={actionLoading}
                     >
-                      {actionLoading ? "..." : "Pay"}
+                      {actionLoading ? "..." : t("balance.payCredit")}
                     </button>
                   </div>
                 </div>
@@ -213,7 +213,7 @@ export default function BalancePage() {
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Account Type</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">{t("balance.account")}</label>
               <select
                 className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={form.account_type}
@@ -225,20 +225,20 @@ export default function BalancePage() {
                   }))
                 }
               >
-                <option value="balance">Balance</option>
-                <option value="credit">Credit</option>
+                <option value="balance">{t("common.balance")}</option>
+                <option value="credit">{t("common.credit")}</option>
               </select>
             </div>
 
             <div>
-              <label className="mb-2 block text-sm font-medium text-slate-700">Direction</label>
+              <label className="mb-2 block text-sm font-medium text-slate-700">{t("balance.direction")}</label>
               <select
                 className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
                 value={form.direction}
                 onChange={(e) => setForm((prev) => ({ ...prev, direction: e.target.value }))}
               >
-                <option value="in">In</option>
-                <option value="out">Out</option>
+                <option value="in">{t("common.in")}</option>
+                <option value="out">{t("common.out")}</option>
               </select>
             </div>
 
@@ -247,7 +247,7 @@ export default function BalancePage() {
               type="number"
               min="0.01"
               step="0.01"
-              placeholder="0.00"
+              placeholder={t("balance.amountPlaceholder")}
               value={form.amount}
               onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}
               required
@@ -256,7 +256,7 @@ export default function BalancePage() {
             {form.account_type === "credit" && (
               <InputField
                 label={t("balance.supplierName")}
-                placeholder="Supplier name"
+                placeholder={t("balance.supplierNamePlaceholder")}
                 value={form.supplier_name}
                 onChange={(e) => setForm((prev) => ({ ...prev, supplier_name: e.target.value }))}
                 required
@@ -265,7 +265,7 @@ export default function BalancePage() {
 
             <InputField
               label={t("balance.noteOptional")}
-              placeholder="Add note (optional)"
+              placeholder={t("balance.notePlaceholder")}
               value={form.note}
               onChange={(e) => setForm((prev) => ({ ...prev, note: e.target.value }))}
             />
@@ -275,7 +275,7 @@ export default function BalancePage() {
               className="w-full rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 font-semibold text-white transition-all duration-200 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-60"
               disabled={actionLoading}
             >
-              {actionLoading ? "Saving..." : "Add Entry"}
+              {actionLoading ? t("balance.saving") : t("balance.saveEntry")}
             </button>
           </form>
         </Card>

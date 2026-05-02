@@ -1,4 +1,10 @@
+"use client";
+
+import { useLanguage } from "@/lib/i18n/LanguageContext";
+
 export default function DataTable({ columns, data, className = "", striped = true, rowClassName }) {
+  const { t } = useLanguage();
+
   return (
     <div className="overflow-x-auto">
       <table className={`w-full min-w-max text-left text-sm ${className}`}>
@@ -33,7 +39,7 @@ export default function DataTable({ columns, data, className = "", striped = tru
           ) : (
             <tr>
               <td className="px-4 py-8 text-center text-slate-500 text-sm" colSpan={columns.length}>
-                No data available
+                {t("common.noData")}
               </td>
             </tr>
           )}

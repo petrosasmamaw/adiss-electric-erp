@@ -46,15 +46,15 @@ export default function ReportsPage() {
     },
     {
       key: "batch_no",
-      label: "Batch / ID",
+      label: t("reports.batchOrId"),
       render: (row) => {
         if (row.item_id) {
-          return `${row.item_id}${row.has_receipt ? "" : " (without receipt)"}`;
+          return `${row.item_id}${row.has_receipt ? "" : ` (${t("common.withoutReceipt")})`}`;
         }
 
         if (row.batch_name || row.batch_no) {
-          const name = row.batch_name || `Batch ${row.batch_no}`;
-          return `${name}${row.has_receipt ? "" : " (without receipt)"}`;
+          const name = row.batch_name || `${t("common.batch")} ${row.batch_no}`;
+          return `${name}${row.has_receipt ? "" : ` (${t("common.withoutReceipt")})`}`;
         }
 
         return "—";
@@ -69,7 +69,7 @@ export default function ReportsPage() {
             ? "bg-blue-100 text-blue-700"
             : "bg-emerald-100 text-emerald-700"
         }`}>
-          {row.type === "buy" ? "🛒 Buy" : "💰 Sell"}
+          {row.type === "buy" ? `🛒 ${t("common.buy")}` : `💰 ${t("common.sell")}`}
         </span>
       ),
     },
@@ -88,15 +88,6 @@ export default function ReportsPage() {
       label: t("reports.sellPrice"),
       render: (row) => row.sell_price == null ? "—" : `Rs ${Number(row.sell_price || 0).toFixed(2)}`,
     },
-    {
-      key: "profit",
-      label: t("reports.profit"),
-      render: (row) => (
-        <span className={`font-semibold ${Number(row.profit || 0) >= 0 ? "text-emerald-600" : "text-rose-600"}`}>
-          Rs {Number(row.profit || 0).toFixed(2)}
-        </span>
-      ),
-    },
   ];
 
   return (
@@ -112,7 +103,7 @@ export default function ReportsPage() {
       {/* Filters */}
       <Card variant="elevated" className="p-6 flex flex-col md:flex-row gap-4 items-end">
         <div className="flex-1">
-          <label className="block text-sm font-medium text-slate-700 mb-2">Filter by Product</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">{t("reports.filterByProduct")}</label>
           <select
             className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
             value={productId}
@@ -128,7 +119,7 @@ export default function ReportsPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Time Range</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">{t("reports.timeRange")}</label>
           <select
             className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
             value={range}
@@ -143,27 +134,17 @@ export default function ReportsPage() {
       </Card>
 
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card variant="elevated" className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50">
-          <p className="text-sm uppercase tracking-widest font-semibold text-slate-600">Buy Transactions</p>
+          <p className="text-sm uppercase tracking-widest font-semibold text-slate-600">{t("reports.buyTransactions")}</p>
           <p className="text-3xl font-bold text-blue-700 mt-2">{grouped.buy.length}</p>
-          <p className="text-xs text-slate-600 mt-2">Total: Rs {grouped.buyTotal.toFixed(2)}</p>
+          <p className="text-xs text-slate-600 mt-2">{t("common.total")}: Rs {grouped.buyTotal.toFixed(2)}</p>
         </Card>
 
         <Card variant="elevated" className="p-6 bg-gradient-to-br from-emerald-50 to-emerald-100/50">
-          <p className="text-sm uppercase tracking-widest font-semibold text-slate-600">Sell Transactions</p>
+          <p className="text-sm uppercase tracking-widest font-semibold text-slate-600">{t("reports.sellTransactions")}</p>
           <p className="text-3xl font-bold text-emerald-700 mt-2">{grouped.sell.length}</p>
-          <p className="text-xs text-slate-600 mt-2">Total: Rs {grouped.sellTotal.toFixed(2)}</p>
-        </Card>
-
-        <Card variant="elevated" className="p-6 bg-gradient-to-br from-purple-50 to-purple-100/50">
-          <p className="text-sm uppercase tracking-widest font-semibold text-slate-600">Net Profit</p>
-          <p className={`text-3xl font-bold mt-2 ${grouped.sellTotal - grouped.buyTotal >= 0 ? "text-purple-700" : "text-rose-700"}`}>
-            Rs {(grouped.sellTotal - grouped.buyTotal).toFixed(2)}
-          </p>
-          <p className="text-xs text-slate-600 mt-2">
-            Margin: {grouped.buyTotal > 0 ? (((grouped.sellTotal - grouped.buyTotal) / grouped.buyTotal) * 100).toFixed(1) : 0}%
-          </p>
+          <p className="text-xs text-slate-600 mt-2">{t("common.total")}: Rs {grouped.sellTotal.toFixed(2)}</p>
         </Card>
       </div>
 

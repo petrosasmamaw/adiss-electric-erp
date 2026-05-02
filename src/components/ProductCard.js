@@ -4,12 +4,12 @@ import { useState } from "react";
 
 const fallbackImage = "https://picsum.photos/seed/electric-erp/900/600";
 
-function formatId(item) {
+function formatId(item, t) {
   if (!item) return "";
 
   const idValue = item.id || "";
   const buyPrice = Number(item.buy_price || 0);
-  const withoutReceipt = item?.has_receipt === false ? " (without receipt)" : "";
+  const withoutReceipt = item?.has_receipt === false ? ` (${t("common.withoutReceipt")})` : "";
 
   if (buyPrice > 0) {
     return `${idValue} (Rs ${buyPrice.toFixed(2)})${withoutReceipt}`;
@@ -76,7 +76,7 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
         {/* Mode */}
         <div className="px-3 py-2 bg-slate-50 rounded-lg">
           <p className="text-xs uppercase tracking-widest text-slate-600 font-semibold mb-1">{t("productCard.mode")}</p>
-          <p className="text-sm text-slate-800 font-medium">{tracked ? "🏷️ Tracked by IDs" : "📦 Bulk Quantity"}</p>
+          <p className="text-sm text-slate-800 font-medium">{tracked ? `🏷️ ${t("productCard.trackedByIds")}` : `📦 ${t("productCard.bulkQuantity")}`}</p>
         </div>
 
         {/* IDs Preview */}
@@ -84,18 +84,18 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
           <div className="px-3 py-2 bg-slate-50 rounded-lg">
             <p className="text-xs uppercase tracking-widest text-slate-600 font-semibold mb-2">{t("common.ids")}</p>
             <p className="max-h-12 overflow-hidden text-xs text-slate-700 line-clamp-2">
-              {product.ids.map(formatId).filter(Boolean).join(", ")}
+              {product.ids.map((item) => formatId(item, t)).filter(Boolean).join(", ")}
             </p>
           </div>
         )}
 
         {!tracked && batches.length > 0 && (
           <div className="px-3 py-2 bg-slate-50 rounded-lg space-y-2">
-            <p className="text-xs uppercase tracking-widest text-slate-600 font-semibold">Active Batches</p>
+            <p className="text-xs uppercase tracking-widest text-slate-600 font-semibold">{t("productCard.activeBatches")}</p>
             <div className="space-y-1.5 text-xs text-slate-700">
               {batches.slice(0, 3).map((batch) => (
                 <div key={batch.id} className="flex items-center justify-between gap-2">
-                  <span className="font-medium">{batch.batch_name || `Batch ${batch.batch_no}`}{batch.has_receipt ? "" : " (without receipt)"}</span>
+                  <span className="font-medium">{batch.batch_name || `${t("common.batch")} ${batch.batch_no}`}{batch.has_receipt ? "" : ` (${t("common.withoutReceipt")})`}</span>
                   <span className="text-slate-500">
                     {batch.remaining_quantity}/{batch.quantity} @ Rs {Number(batch.buy_price || 0).toFixed(0)}
                   </span>
@@ -103,7 +103,7 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
               ))}
             </div>
             {batches.length > 3 && (
-              <p className="text-[11px] text-slate-400">+ {batches.length - 3} more</p>
+              <p className="text-[11px] text-slate-400">+ {batches.length - 3} {t("common.more")}</p>
             )}
           </div>
         )}
@@ -123,7 +123,7 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
             onClick={() => onDelete?.(product)}
             disabled={deleting}
           >
-            {deleting ? "..." : "🗑️ Delete"}
+            {deleting ? "..." : `🗑️ ${t("common.delete")}`}
           </button>
         </div>
       </div>
@@ -132,8 +132,8 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
       {showActions && (
         <div className="absolute inset-0 bg-gradient-to-br from-blue-500/95 to-purple-600/95 backdrop-blur-sm flex items-center justify-center rounded-2xl">
           <div className="text-white text-center space-y-3">
-            <p className="text-sm font-semibold">Quick Actions</p>
-            <p className="text-xs text-white/80">Right-click card to edit</p>
+            <p className="text-sm font-semibold">{t("productCard.quickActions")}</p>
+            <p className="text-xs text-white/80">{t("productCard.quickActionsHint")}</p>
           </div>
         </div>
       )}

@@ -59,8 +59,8 @@ export default function DashboardPage() {
     },
     {
       key: "has_receipt",
-      label: "Receipt",
-      render: (row) => (row.has_receipt ? "With receipt" : "Without receipt"),
+      label: t("common.receipt"),
+      render: (row) => (row.has_receipt ? t("common.withReceipt") : t("common.withoutReceipt")),
     },
   ];
 
@@ -76,7 +76,7 @@ export default function DashboardPage() {
             {t("dashboard.title")}
           </h1>
           <p className="text-lg text-white/80 max-w-2xl">
-            {t("dashboard.subtitle") || "Monitor your inventory, sales, and financial performance in real-time"}
+            {t("dashboard.subtitle")}
           </p>
         </div>
       </div>

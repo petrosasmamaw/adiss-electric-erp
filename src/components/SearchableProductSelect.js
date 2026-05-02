@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 export default function SearchableProductSelect({
   label,
@@ -8,12 +9,16 @@ export default function SearchableProductSelect({
   products = [],
   value = "",
   onChange,
-  searchPlaceholder = "Search items...",
-  noResultsText = "No matching items found.",
+  searchPlaceholder,
+  noResultsText,
 }) {
+  const { t } = useLanguage();
   const rootRef = useRef(null);
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+
+  const resolvedSearchPlaceholder = searchPlaceholder || t("common.searchItems");
+  const resolvedNoResultsText = noResultsText || t("common.noSearchResults");
 
   const selectedProduct = useMemo(
     () => products.find((item) => String(item.id) === String(value)),
@@ -96,7 +101,7 @@ export default function SearchableProductSelect({
                 type="text"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder={searchPlaceholder}
+                placeholder={resolvedSearchPlaceholder}
                 className="w-full bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
               />
             </div>
@@ -130,7 +135,7 @@ export default function SearchableProductSelect({
                 );
               })
             ) : (
-              <div className="px-4 py-8 text-center text-sm text-slate-500">{noResultsText}</div>
+              <div className="px-4 py-8 text-center text-sm text-slate-500">{resolvedNoResultsText}</div>
             )}
           </div>
         </div>

@@ -53,7 +53,7 @@ export default function Sidebar({ t, isOpen, onClose }) {
                 ⚡
               </div>
               <div>
-                <p className="text-xs text-slate-400 uppercase tracking-wider">Team</p>
+                <p className="text-xs text-slate-400 uppercase tracking-wider">{t("nav.team")}</p>
                 <p className="font-bold text-sm leading-none">Electric</p>
               </div>
             </div>
@@ -86,7 +86,7 @@ export default function Sidebar({ t, isOpen, onClose }) {
 
           {/* Footer */}
           <div className="px-6 py-4 border-t border-slate-700/40 text-xs text-slate-400">
-            <p>© 2026 Electric ERP</p>
+            <p>{t("nav.sidebarFooter")}</p>
           </div>
         </div>
       </aside>

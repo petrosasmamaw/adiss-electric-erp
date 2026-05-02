@@ -9,7 +9,7 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
           <button
             onClick={onMenuClick}
             className="p-2 hover:bg-slate-100 rounded-lg transition md:hidden"
-            aria-label="Menu"
+            aria-label={t("nav.menu")}
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -26,7 +26,7 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
                 Adiss Electric
               </div>
               <div className="mt-1 text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
-                Powering smart operations
+                {t("nav.brandTagline")}
               </div>
             </div>
           </div>
@@ -38,7 +38,7 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
           <button
             onClick={() => setLanguage(language === "en" ? "amh" : "en")}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition font-medium text-sm text-slate-700"
-            title={language === "en" ? "Switch to Amharic" : "Switch to English"}
+            title={language === "en" ? t("nav.switchToAmharic") : t("nav.switchToEnglish")}
           >
             <span>{language === "en" ? "🇺🇸" : "🇪🇹"}</span>
             <span>{language === "en" ? "EN" : "AM"}</span>
@@ -49,7 +49,7 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
               A
             </div>
-            <span className="hidden sm:inline text-sm font-medium text-slate-700">Admin</span>
+            <span className="hidden sm:inline text-sm font-medium text-slate-700">{t("nav.admin")}</span>
           </div>
         </div>
       </div>
