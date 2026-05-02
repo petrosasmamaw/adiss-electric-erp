@@ -38,7 +38,7 @@ export default function Sidebar({ t, isOpen, onClose }) {
       )}
 
       <aside
-        className={`fixed left-0 top-0 z-50 h-screen w-72 overflow-hidden border-r border-slate-300 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-200 text-slate-800 transition-transform duration-500 md:static md:translate-x-0 ${
+        className={`fixed left-0 top-0 z-50 h-screen w-72 overflow-hidden border-r border-slate-300 bg-gradient-to-b from-slate-100 via-slate-50 to-slate-200 text-slate-800 transition-transform duration-500 md:translate-x-0 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

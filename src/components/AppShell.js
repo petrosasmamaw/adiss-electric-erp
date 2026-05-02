@@ -26,7 +26,7 @@ export default function AppShell({ children }) {
       <div className="relative flex min-h-screen">
         <Sidebar t={t} isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-w-0 flex-1 flex-col md:pl-72">
           <Navbar
             t={t}
             language={language}
