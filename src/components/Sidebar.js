@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import {
   LayoutDashboard,
   Package,
@@ -49,8 +49,15 @@ export default function Sidebar({ t, isOpen, onClose }) {
           {/* Logo */}
           <div className="flex items-center justify-between px-6 py-5 border-b border-slate-700/40">
             <div className="flex items-center gap-2">
-              <div className="grid h-9 w-9 place-items-center rounded-lg bg-white text-slate-900 font-bold text-base">
-                ⚡
+              <div className="relative h-9 w-9 overflow-hidden rounded-lg border border-slate-500/40 bg-white">
+                <Image
+                  src="/adiss-logo.png"
+                  alt="Adiss Electric logo"
+                  fill
+                  className="object-contain p-1"
+                  sizes="36px"
+                  priority
+                />
               </div>
               <div>
                 <p className="text-xs text-slate-400 uppercase tracking-wider">{t("nav.team")}</p>

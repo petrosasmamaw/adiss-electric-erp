@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 export default function Navbar({ t, language, setLanguage, onMenuClick }) {
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl">
@@ -18,8 +20,15 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
 
           {/* Brand Mark */}
           <div className="hidden md:flex items-center gap-3 rounded-2xl border border-amber-200/70 bg-gradient-to-r from-white via-amber-50 to-sky-50 px-4 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.06)]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 via-blue-500 to-amber-400 text-white shadow-lg shadow-sky-500/20">
-              <span className="text-sm font-black tracking-[0.18em]">AE</span>
+            <div className="relative h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg">
+              <Image
+                src="/adiss-logo.png"
+                alt="Adiss Electric logo"
+                fill
+                className="object-contain p-1"
+                sizes="40px"
+                priority
+              />
             </div>
             <div className="leading-none">
               <div className="font-display text-lg font-bold tracking-wide text-slate-900">
