@@ -113,7 +113,7 @@ async function initSchema() {
       id SERIAL PRIMARY KEY,
       product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
       item_id TEXT,
-      type TEXT NOT NULL CHECK (type IN ('buy', 'sell')),
+      type TEXT NOT NULL,
       quantity INTEGER NOT NULL CHECK (quantity > 0),
       buy_price NUMERIC(12, 2) NOT NULL DEFAULT 0 CHECK (buy_price >= 0),
       sell_price NUMERIC(12, 2),
@@ -122,6 +122,12 @@ async function initSchema() {
       remaining_stock INTEGER NOT NULL CHECK (remaining_stock >= 0),
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  await pool.query(`ALTER TABLE item_reports DROP CONSTRAINT IF EXISTS item_reports_type_check;`);
+  await pool.query(`
+    ALTER TABLE item_reports
+    ADD CONSTRAINT item_reports_type_check CHECK (type IN ('buy', 'install_stock', 'sell'));
   `);
 
   await pool.query(`
@@ -157,11 +163,17 @@ async function initSchema() {
     CREATE TABLE IF NOT EXISTS transactions (
       id SERIAL PRIMARY KEY,
       product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-      type TEXT NOT NULL CHECK (type IN ('buy', 'sell')),
+      type TEXT NOT NULL,
       amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
       ethiopian_date TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+  `);
+
+  await pool.query(`ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check;`);
+  await pool.query(`
+    ALTER TABLE transactions
+    ADD CONSTRAINT transactions_type_check CHECK (type IN ('buy', 'install_stock', 'sell'));
   `);
 
   await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS ethiopian_date TEXT;`);

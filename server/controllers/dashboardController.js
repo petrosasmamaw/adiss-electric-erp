@@ -17,7 +17,7 @@ async function getDashboard(req, res) {
       `
         SELECT COALESCE(SUM(buy_price), 0) AS total_cost
         FROM item_reports
-        WHERE type = 'buy' ${rangeClause}
+        WHERE type IN ('buy', 'install_stock') ${rangeClause}
       `
     );
 

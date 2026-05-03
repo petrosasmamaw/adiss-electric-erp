@@ -252,7 +252,7 @@ async function createProduct(req, res) {
               batchId: null,
               batchNo: null,
               batchName: null,
-              type: "buy",
+              type: "install_stock",
               quantity: 1,
               buyPrice: idBuyPrice,
               sellPrice: null,
@@ -290,7 +290,7 @@ async function createProduct(req, res) {
             batchId: insertedBatch?.id || null,
             batchNo: insertedBatch?.batch_no || batchNo,
             batchName,
-            type: "buy",
+            type: "install_stock",
             quantity: stock,
             buyPrice: defaultPrice,
             sellPrice: null,
@@ -309,7 +309,7 @@ async function createProduct(req, res) {
           totalAmount = defaultPrice * stock;
         }
 
-        await logTransaction(client, product.id, "buy", totalAmount, { hasReceipt });
+        await logTransaction(client, product.id, "install_stock", totalAmount, { hasReceipt });
       }
 
       await client.query("COMMIT");
@@ -372,7 +372,7 @@ async function buyProduct(req, res) {
     await client.query("BEGIN");
 
     const { rows } = await client.query(
-      `SELECT id, stock, default_price, ids FROM products WHERE id = $1 FOR UPDATE`,
+      `SELECT id, name, stock, default_price, ids FROM products WHERE id = $1 FOR UPDATE`,
       [productId]
     );
 
@@ -496,8 +496,8 @@ async function buyProduct(req, res) {
       await applyBuyFinanceEntry(
         purchaseAmount,
         paymentSource === "credit"
-          ? `Buy tracked IDs for product #${productId} on credit from ${supplierName}`
-          : `Buy tracked IDs for product #${productId} via bank`
+          ? `Credit for buy ${product.name} from ${supplierName}`
+          : `Buy item ${product.name} with balance`
       );
 
       await client.query(
@@ -551,8 +551,8 @@ async function buyProduct(req, res) {
     await applyBuyFinanceEntry(
       purchaseAmount,
       paymentSource === "credit"
-        ? `Buy quantity for product #${productId} on credit from ${supplierName}`
-        : `Buy quantity for product #${productId} via bank`
+        ? `Credit for buy ${product.name} from ${supplierName}`
+        : `Buy item ${product.name} with balance`
     );
 
     await client.query(
@@ -632,7 +632,7 @@ async function sellProduct(req, res) {
     await client.query("BEGIN");
 
     const { rows } = await client.query(
-      `SELECT id, stock, default_price, ids FROM products WHERE id = $1 FOR UPDATE`,
+      `SELECT id, name, stock, default_price, ids FROM products WHERE id = $1 FOR UPDATE`,
       [productId]
     );
 
@@ -699,7 +699,7 @@ async function sellProduct(req, res) {
         accountType: "balance",
         direction: "in",
         amount: saleAmount,
-        note: `Sell tracked IDs for product #${productId}`,
+        note: `Sell item ${product.name}`,
         source: "sell",
         referenceType: "product",
         referenceId: productId,

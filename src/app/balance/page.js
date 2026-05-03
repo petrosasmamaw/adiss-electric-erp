@@ -55,7 +55,7 @@ export default function BalancePage() {
         direction: form.direction,
         amount: Number(form.amount),
         supplier_name: form.account_type === "credit" ? form.supplier_name.trim() : undefined,
-        note: form.note,
+        note: form.note.trim(),
       })
     );
 
@@ -106,6 +106,11 @@ export default function BalancePage() {
           {row.direction === "in" ? t("common.in") : t("common.out")}
         </span>
       ),
+    },
+    {
+      key: "note",
+      label: t("common.note"),
+      render: (row) => row.note || "-",
     },
     {
       key: "amount",
