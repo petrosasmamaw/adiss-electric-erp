@@ -155,6 +155,8 @@ async function initSchema() {
       ADD COLUMN IF NOT EXISTS receipt_mismatch BOOLEAN NOT NULL DEFAULT FALSE;
     `);
 
+    await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS ethiopian_date TEXT;`);
+
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS buy_price NUMERIC(12, 2) NOT NULL DEFAULT 0;`);
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS sell_price NUMERIC(12, 2);`);
   await pool.query(`ALTER TABLE item_reports ADD COLUMN IF NOT EXISTS profit NUMERIC(12, 2) NOT NULL DEFAULT 0;`);
