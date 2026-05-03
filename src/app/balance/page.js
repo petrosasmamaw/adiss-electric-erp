@@ -118,11 +118,6 @@ export default function BalancePage() {
       render: (row) => <span className="font-semibold">{asCurrency(row.amount)}</span>,
     },
     {
-      key: "supplier_name",
-      label: t("balance.supplier"),
-      render: (row) => row.supplier_name || "-",
-    },
-    {
       key: "has_receipt",
       label: t("common.receipt"),
       render: (row) => (row.has_receipt ? t("common.withReceipt") : t("common.withoutReceipt")),

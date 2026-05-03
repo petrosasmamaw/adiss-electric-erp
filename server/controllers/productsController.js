@@ -811,7 +811,7 @@ async function sellProduct(req, res) {
       accountType: "balance",
       direction: "in",
       amount: saleAmount,
-      note: `Sell quantity for product #${productId}`,
+      note: `Sell item ${product.name}`,
       source: "sell",
       referenceType: "product",
       referenceId: productId,
