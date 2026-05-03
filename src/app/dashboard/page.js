@@ -5,11 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import StatCard from "@/components/StatCard";
 import Card from "@/components/Card";
 import SectionHeader from "@/components/SectionHeader";
-import DataTable from "@/components/DataTable";
-import LineChart from "@/components/charts/LineChart";
-import AreaChart from "@/components/charts/AreaChart";
-import DonutChart from "@/components/charts/DonutChart";
-import MapPreview from "@/components/charts/MapPreview";
+// removed charts: DataTable and LineChart imports
 import { fetchDashboard } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -147,40 +143,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Charts Grid */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        <div>
-          <div className="mb-3 text-sm font-semibold text-slate-600">New Request Trend</div>
-          <div>
-            <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <LineChart data={(dashboard.trend || [10, 20, 30, 40, 60, 80]).map(Number)} width={420} height={160} />
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-3 text-sm font-semibold text-slate-600">Details</div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4">
-            <AreaChart data={(dashboard.detailsSeries || [5, 10, 8, 20, 18, 30]).map(Number)} width={420} height={140} />
-          </div>
-        </div>
-
-        <div>
-          <div className="mb-3 text-sm font-semibold text-slate-600">Map Preview</div>
-          <MapPreview label={"Eastern Region"} amount={`Rs ${Number(dashboard.mapValue || 0).toLocaleString()}`} />
-        </div>
-
-        <div>
-          <div className="mb-3 text-sm font-semibold text-slate-600">Borrowers by State</div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-4 flex items-center justify-center">
-            <DonutChart values={dashboard.donutValues || [60, 20, 15, 5]} size={140} />
-            <div className="ml-4">
-              <div className="text-2xl font-bold">Rs {Number(dashboard.totalAmount || 0).toLocaleString()}</div>
-              <div className="text-sm text-slate-500">Total Amount</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* Charts removed */}
 
       {/* Recent Transactions removed per UI request */}
     </section>
