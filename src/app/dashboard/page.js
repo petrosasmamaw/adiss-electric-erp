@@ -6,7 +6,7 @@ import StatCard from "@/components/StatCard";
 import Card from "@/components/Card";
 import SectionHeader from "@/components/SectionHeader";
 import DataTable from "@/components/DataTable";
-import { fetchDashboard, fetchTransactions } from "@/lib/features/erpSlice";
+import { fetchDashboard } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 function asCurrency(value) {
@@ -18,13 +18,12 @@ function asCurrency(value) {
 
 export default function DashboardPage() {
   const dispatch = useDispatch();
-  const { dashboard, transactions } = useSelector((state) => state.erp);
+  const { dashboard } = useSelector((state) => state.erp);
   const { t } = useLanguage();
   const [range, setRange] = useState("all");
 
   useEffect(() => {
     dispatch(fetchDashboard(range));
-    dispatch(fetchTransactions(range));
   }, [dispatch, range]);
 
   const tableColumns = [
@@ -144,26 +143,7 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Recent Transactions */}
-      <div>
-        <SectionHeader
-          subtitle={t("dashboard.activity")}
-          title={t("dashboard.recentTransactions")}
-        />
-
-        <Card variant="elevated" className="p-6 mt-4">
-          <DataTable
-            columns={tableColumns}
-            data={transactions}
-            rowClassName={(row) => row.receipt_mismatch ? "!bg-rose-100 hover:!bg-rose-100" : ""}
-          />
-          {transactions.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-slate-500 text-sm">{t("dashboard.noTransactions")}</p>
-            </div>
-          )}
-        </Card>
-      </div>
+      {/* Recent Transactions removed per UI request */}
     </section>
   );
 }

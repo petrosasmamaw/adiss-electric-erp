@@ -167,7 +167,9 @@ export default function ReportsPage() {
         <DataTable
           columns={tableColumns}
           data={reports}
-          rowClassName={(row) => row.receipt_mismatch ? "!bg-rose-100 hover:!bg-rose-100" : ""}
+          rowClassName={(row) =>
+            row.receipt_mismatch ? "!bg-rose-100 hover:!bg-rose-100 !border !border-rose-500" : ""
+          }
         />
         {reports.length === 0 && (
           <div className="text-center py-12">
