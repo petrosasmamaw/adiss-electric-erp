@@ -38,7 +38,7 @@ export default function ReportsPage() {
     {
       key: "created_at",
       label: t("common.date"),
-      render: (row) => new Date(row.created_at).toLocaleDateString(),
+      render: (row) => row.ethiopian_date || new Date(row.created_at).toLocaleDateString(),
     },
     {
       key: "product_name",
@@ -80,6 +80,11 @@ export default function ReportsPage() {
           </span>
         );
       },
+    },
+    {
+      key: "has_receipt",
+      label: t("common.receipt"),
+      render: (row) => (row.has_receipt ? t("common.withReceipt") : t("common.withoutReceipt")),
     },
     {
       key: "quantity",
