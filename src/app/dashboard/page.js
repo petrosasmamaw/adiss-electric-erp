@@ -54,6 +54,42 @@ export default function DashboardPage() {
   );
 
   const donutColors = ["#2563eb", "#10b981", "#f59e0b"];
+  const translateDistributionLabel = (name) => {
+    if (name === "Total Sales") return t("dashboard.labelTotalSales");
+    if (name === "Total Buy (Cost)") return t("dashboard.labelTotalCost");
+    if (name === "Opening Stock Value") return t("dashboard.labelOpeningStockValue");
+    return name;
+  };
+
+  const translateFinancialLabel = (name) => {
+    if (name === "Balance") return t("dashboard.labelBalance");
+    if (name === "Stock Value") return t("dashboard.seriesStockValue");
+    if (name === "Credit") return t("dashboard.labelCredit");
+    if (name === "Net") return t("dashboard.labelNet");
+    return name;
+  };
+
+  const financialPositionColor = (name) => {
+    if (name === "Balance") return "#2563eb";
+    if (name === "Stock Value") return "#10b981";
+    if (name === "Credit") return "#ef4444";
+    return "#7c3aed";
+  };
+
+  const localizedDistributionData = analytics.distributionData.map((row) => ({
+    ...row,
+    name: translateDistributionLabel(row.name),
+  }));
+
+  const localizedFinancialPositionData = analytics.financialPositionData.map((row) => ({
+    ...row,
+    displayName: translateFinancialLabel(row.name),
+  }));
+
+  const localizedProfitData = analytics.profitData.map((row) => ({
+    ...row,
+    name: t("dashboard.seriesProfit"),
+  }));
 
   return (
     <section className="space-y-8">
@@ -129,8 +165,8 @@ export default function DashboardPage() {
       {/* Charts */}
       <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <ChartCard
-          title="Sales vs Cost vs Profit"
-          subtitle="Trend by date"
+          title={t("dashboard.salesTrendTitle")}
+          subtitle={t("dashboard.salesTrendSubtitle")}
           icon={TrendingUp}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -140,16 +176,16 @@ export default function DashboardPage() {
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(v) => asCurrency(v)} />
               <Legend />
-              <Line type="monotone" dataKey="totalSales" name="Sales" stroke="#2563eb" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="totalCost" name="Cost" stroke="#f59e0b" strokeWidth={2.5} dot={false} />
-              <Line type="monotone" dataKey="profit" name="Profit" stroke="#10b981" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="totalSales" name={t("dashboard.seriesSales")} stroke="#2563eb" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="totalCost" name={t("dashboard.seriesCost")} stroke="#f59e0b" strokeWidth={2.5} dot={false} />
+              <Line type="monotone" dataKey="profit" name={t("dashboard.seriesProfit")} stroke="#10b981" strokeWidth={2.5} dot={false} />
             </RechartsLineChart>
           </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard
-          title="Business Distribution"
-          subtitle="Sales, Buy Cost, Opening Stock"
+          title={t("dashboard.businessDistributionTitle")}
+          subtitle={t("dashboard.businessDistributionSubtitle")}
           icon={PieChartIcon}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -157,7 +193,7 @@ export default function DashboardPage() {
               <Tooltip formatter={(v) => asCurrency(v)} />
               <Legend />
               <Pie
-                data={analytics.distributionData}
+                data={localizedDistributionData}
                 dataKey="value"
                 nameKey="name"
                 cx="50%"
@@ -175,8 +211,8 @@ export default function DashboardPage() {
         </ChartCard>
 
         <ChartCard
-          title="Inventory Value by Product"
-          subtitle="Stock quantity x cost price"
+          title={t("dashboard.inventoryValueTitle")}
+          subtitle={t("dashboard.inventoryValueSubtitle")}
           icon={Boxes}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -185,14 +221,14 @@ export default function DashboardPage() {
               <XAxis type="number" tick={{ fontSize: 11 }} />
               <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 11 }} />
               <Tooltip formatter={(v) => asCurrency(v)} />
-              <Bar dataKey="stockValue" name="Stock Value" fill="#2563eb" radius={[0, 8, 8, 0]} />
+              <Bar dataKey="stockValue" name={t("dashboard.seriesStockValue")} fill="#2563eb" radius={[0, 8, 8, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard
-          title="Stock Movement"
-          subtitle="Stock In (buy + opening) vs Stock Out"
+          title={t("dashboard.stockMovementTitle")}
+          subtitle={t("dashboard.stockMovementSubtitle")}
           icon={Activity}
         >
           <ResponsiveContainer width="100%" height="100%">
@@ -202,59 +238,48 @@ export default function DashboardPage() {
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip />
               <Legend />
-              <Bar dataKey="stockIn" name="Stock In" fill="#10b981" radius={[6, 6, 0, 0]} />
-              <Bar dataKey="stockOut" name="Stock Out" fill="#ef4444" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="stockIn" name={t("dashboard.seriesStockIn")} fill="#10b981" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="stockOut" name={t("dashboard.seriesStockOut")} fill="#ef4444" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard
-          title="Profit & Profit Margin"
-          subtitle="Margin = (profit / sales) * 100"
+          title={t("dashboard.profitMarginTitle")}
+          subtitle={t("dashboard.profitMarginSubtitle")}
           icon={CircleDollarSign}
           className="xl:col-span-1"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={analytics.profitData} margin={{ top: 10, right: 20, left: 8, bottom: 0 }}>
+            <ComposedChart data={localizedProfitData} margin={{ top: 10, right: 20, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="name" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="left" tick={{ fontSize: 11 }} />
               <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11 }} unit="%" />
               <Tooltip formatter={(v, key) => (key === "margin" ? `${Number(v).toFixed(2)}%` : asCurrency(v))} />
               <Legend />
-              <Bar yAxisId="left" dataKey="profit" name="Profit" fill="#10b981" radius={[8, 8, 0, 0]} />
-              <Line yAxisId="right" type="monotone" dataKey="margin" name="Margin %" stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 4 }} />
+              <Bar yAxisId="left" dataKey="profit" name={t("dashboard.seriesProfit")} fill="#10b981" radius={[8, 8, 0, 0]} />
+              <Line yAxisId="right" type="monotone" dataKey="margin" name={t("dashboard.seriesMargin")} stroke="#7c3aed" strokeWidth={2.5} dot={{ r: 4 }} />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
 
         <ChartCard
-          title="Financial Position"
-          subtitle="Net = Balance + Stock Value - Credit"
+          title={t("dashboard.financialPositionTitle")}
+          subtitle={t("dashboard.financialPositionSubtitle")}
           icon={Landmark}
           className="xl:col-span-1"
         >
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={analytics.financialPositionData} margin={{ top: 10, right: 16, left: 8, bottom: 0 }}>
+            <BarChart data={localizedFinancialPositionData} margin={{ top: 10, right: 16, left: 8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+              <XAxis dataKey="displayName" tick={{ fontSize: 11 }} />
               <YAxis tick={{ fontSize: 11 }} />
               <Tooltip formatter={(v) => asCurrency(v)} />
               <Legend />
-              <Bar dataKey="value" name="Amount" radius={[8, 8, 0, 0]}>
-                {analytics.financialPositionData.map((row, idx) => (
-                  <Cell
-                    key={idx}
-                    fill={
-                      row.name === "Balance"
-                        ? "#2563eb"
-                        : row.name === "Stock Value"
-                          ? "#10b981"
-                          : row.name === "Credit"
-                            ? "#ef4444"
-                            : "#7c3aed"
-                    }
-                  />
+              <Bar dataKey="value" name={t("dashboard.seriesAmount")} radius={[8, 8, 0, 0]}>
+                {localizedFinancialPositionData.map((row, idx) => (
+                  <Cell key={idx} fill={financialPositionColor(row.name)} />
                 ))}
               </Bar>
             </BarChart>
