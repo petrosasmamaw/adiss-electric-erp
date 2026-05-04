@@ -51,13 +51,16 @@ export const sellProduct = createAsyncThunk("erp/sellProduct", async ({ productI
   return true;
 });
 
-export const fetchReports = createAsyncThunk("erp/fetchReports", async ({ productId = "", range = "all" } = {}) => {
+export const fetchReports = createAsyncThunk("erp/fetchReports", async ({ productId = "", range = "all", receiptFilter = "all" } = {}) => {
   const params = new URLSearchParams();
   if (productId) {
     params.set("productId", String(productId));
   }
   if (range && range !== "all") {
     params.set("range", range);
+  }
+  if (receiptFilter && receiptFilter !== "all") {
+    params.set("receiptFilter", receiptFilter);
   }
 
   const query = params.toString();

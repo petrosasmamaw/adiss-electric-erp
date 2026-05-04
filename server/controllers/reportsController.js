@@ -12,6 +12,7 @@ function resolveEthiopianDate(row) {
 async function getItemReports(req, res) {
   const productId = Number(req.query.productId);
   const range = String(req.query.range || "all");
+  const receiptFilter = String(req.query.receiptFilter || "all");
 
   const values = [];
   const conditions = [];
@@ -24,6 +25,10 @@ async function getItemReports(req, res) {
   const rangeClause = getRangeClause(range);
   if (rangeClause) {
     conditions.push(rangeClause.replace(/^AND\s+/, ""));
+  }
+
+  if (receiptFilter === "red_transactions") {
+    conditions.push(`ir.receipt_mismatch = TRUE`);
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";

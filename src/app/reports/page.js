@@ -14,14 +14,15 @@ export default function ReportsPage() {
   const { t } = useLanguage();
   const [productId, setProductId] = useState("");
   const [range, setRange] = useState("all");
+  const [receiptFilter, setReceiptFilter] = useState("all");
 
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchReports({ productId, range }));
-  }, [dispatch, productId, range]);
+    dispatch(fetchReports({ productId, range, receiptFilter }));
+  }, [dispatch, productId, range, receiptFilter]);
 
   const grouped = useMemo(() => {
     const buy = reports.filter((r) => r.type === "buy" || r.type === "install_stock");
@@ -142,6 +143,18 @@ export default function ReportsPage() {
             <option value="today">{t("reports.today")}</option>
             <option value="7d">{t("reports.sevenDays")}</option>
             <option value="30d">{t("reports.thirtyDays")}</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Red transactions</label>
+          <select
+            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
+            value={receiptFilter}
+            onChange={(e) => setReceiptFilter(e.target.value)}
+          >
+            <option value="all">All reports</option>
+            <option value="red_transactions">Buy without receipt / Sell with receipt</option>
           </select>
         </div>
       </Card>
