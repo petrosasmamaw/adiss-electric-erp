@@ -147,14 +147,14 @@ export default function ReportsPage() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Red transactions</label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">{t("reports.reportFilterLabel")}</label>
           <select
             className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
             value={receiptFilter}
             onChange={(e) => setReceiptFilter(e.target.value)}
           >
-            <option value="all">All reports</option>
-            <option value="red_transactions">Buy without receipt / Sell with receipt</option>
+            <option value="all">{t("reports.reportFilterAll")}</option>
+            <option value="red_transactions">{t("reports.redTransactions")}</option>
           </select>
         </div>
       </Card>
