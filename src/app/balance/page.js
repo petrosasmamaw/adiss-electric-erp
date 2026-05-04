@@ -176,9 +176,9 @@ export default function BalancePage() {
                   <div className="flex w-full flex-col gap-2 sm:flex-row md:w-auto">
                     <input
                       className="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 transition-all focus:outline-none focus:ring-2 focus:ring-amber-400 sm:max-w-[140px]"
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       min="0.01"
-                      step="0.01"
                       placeholder={t("balance.payAmountPlaceholder")}
                       value={payAmounts[row.supplier_name] || ""}
                       onChange={(e) =>
@@ -244,9 +244,9 @@ export default function BalancePage() {
 
             <InputField
               label={t("common.amount")}
-              type="number"
+              type="text"
+              inputMode="decimal"
               min="0.01"
-              step="0.01"
               placeholder={t("balance.amountPlaceholder")}
               value={form.amount}
               onChange={(e) => setForm((prev) => ({ ...prev, amount: e.target.value }))}

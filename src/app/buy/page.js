@@ -200,7 +200,9 @@ export default function BuyPage() {
                 />
                 <InputField
                   label={t("buy.quantityBulk")}
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   min="1"
                   placeholder="1"
                   value={quantity}
@@ -212,9 +214,9 @@ export default function BuyPage() {
 
             <InputField
               label={t("buy.price")}
-              type="number"
+              type="text"
+              inputMode="decimal"
               min="0"
-              step="0.01"
               placeholder={selectedProduct?.default_price || "0"}
               value={price}
               onChange={(e) => setPrice(e.target.value)}

@@ -176,7 +176,9 @@ export default function StorePage() {
                 />
                 <InputField
                   label={t("store.stockOptional")}
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   min="1"
                   placeholder="100"
                   value={form.stock}
@@ -188,9 +190,9 @@ export default function StorePage() {
 
             <InputField
               label={t("store.defaultPrice")}
-              type="number"
+              type="text"
+              inputMode="decimal"
               min="0"
-              step="0.01"
               placeholder="50000"
               value={form.default_price}
               onChange={(e) => setForm((prev) => ({ ...prev, default_price: e.target.value }))}

@@ -184,7 +184,9 @@ export default function SellPage() {
             {!isTrackedProduct && (
               <InputField
                 label={t("sell.quantityBulk")}
-                type="number"
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
                 min="1"
                 placeholder={t("sell.quantityPlaceholder")}
                 value={quantity}
@@ -195,9 +197,9 @@ export default function SellPage() {
             {/* Sell Price */}
             <InputField
               label={t("sell.sellPrice")}
-              type="number"
+              type="text"
+              inputMode="decimal"
               min="0"
-              step="0.01"
               placeholder={selectedProduct?.default_price || "0"}
               value={price}
               onChange={(e) => setPrice(e.target.value)}

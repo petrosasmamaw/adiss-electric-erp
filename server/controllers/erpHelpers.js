@@ -15,7 +15,10 @@ function getCurrentEthiopianDate() {
 }
 
 function parseNumeric(value, fallback = 0) {
-  const parsed = Number(value);
+  const normalized = typeof value === "string"
+    ? value.replace(/[^0-9.-]/g, "")
+    : value;
+  const parsed = Number(normalized);
   if (!Number.isFinite(parsed) || parsed < 0) {
     return fallback;
   }
