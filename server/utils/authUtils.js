@@ -43,8 +43,8 @@ function hashResetToken(token) {
 function getCookieOptions(isProduction) {
   return {
     httpOnly: true,
-    sameSite: "lax",
-    secure: isProduction,
+    sameSite: isProduction ? "none" : "lax", // Use 'none' for cross-domain in production
+    secure: isProduction, // Requires HTTPS in production
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   };
 }
