@@ -112,7 +112,6 @@ async function getProducts(req, res) {
           p.stock,
           p.default_price,
           p.ids,
-          p.image_url,
           COALESCE(
             jsonb_agg(
               jsonb_build_object(
@@ -158,7 +157,6 @@ async function createProduct(req, res) {
     ids: idsRaw,
     batch_name: batchNameRaw,
     has_receipt: hasReceiptRaw,
-    image_url: imageUrl,
   } = req.body || {};
 
   if (!name || !category) {
@@ -230,11 +228,11 @@ async function createProduct(req, res) {
 
       const { rows } = await client.query(
         `
-          INSERT INTO products (name, category, stock, default_price, ids, image_url)
-          VALUES ($1, $2, $3, $4, $5::jsonb, $6)
-          RETURNING id, name, category, stock, default_price, ids, image_url
-        `,
-        [name.trim(), category.trim(), stock, defaultPrice, JSON.stringify(idsForInsert), imageUrl || null]
+          INSERT INTO products (name, category, stock, default_price, ids)
+              VALUES ($1, $2, $3, $4, $5::jsonb)
+              RETURNING id, name, category, stock, default_price, ids
+            `,
+            [name.trim(), category.trim(), stock, defaultPrice, JSON.stringify(idsForInsert)]
       );
 
       const product = rows[0];

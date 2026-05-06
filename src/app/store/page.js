@@ -9,7 +9,6 @@ import InputField from "@/components/InputField";
 import { clearError, createProduct, deleteProduct, fetchProducts } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
-const defaultImage = "https://picsum.photos/seed/electric-store/900/600";
 
 export default function StorePage() {
   const dispatch = useDispatch();
@@ -27,7 +26,6 @@ export default function StorePage() {
     default_price: "",
     idsText: "",
     has_receipt: true,
-    image_url: defaultImage,
   });
 
   const isTrackedMode = form.mode === "id";
@@ -67,7 +65,6 @@ export default function StorePage() {
       category: form.category,
       mode: isTrackedMode ? "id" : "bulk",
       default_price: Number(form.default_price || 0),
-      image_url: form.image_url || defaultImage,
       has_receipt: Boolean(form.has_receipt),
       ids,
     };
@@ -93,7 +90,6 @@ export default function StorePage() {
       default_price: "",
       idsText: "",
       has_receipt: true,
-      image_url: defaultImage,
     });
   }
 
@@ -206,12 +202,7 @@ export default function StorePage() {
               {t("common.createWithReceipt")}
             </label>
 
-            <InputField
-              label={t("store.imageUrl")}
-              placeholder={t("store.imagePlaceholder")}
-              value={form.image_url}
-              onChange={(e) => setForm((prev) => ({ ...prev, image_url: e.target.value }))}
-            />
+            {/* image field removed: images are no longer used for products */}
 
             <button
               disabled={actionLoading}

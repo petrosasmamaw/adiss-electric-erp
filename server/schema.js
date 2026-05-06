@@ -9,11 +9,13 @@ async function initSchema() {
       stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
       default_price NUMERIC(12, 2) NOT NULL CHECK (default_price >= 0),
       ids JSONB NOT NULL DEFAULT '[]'::jsonb,
-      image_url TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+
+  // remove legacy image column if present
+  await pool.query(`ALTER TABLE products DROP COLUMN IF EXISTS image_url;`);
 
   const idsColumn = await pool.query(`
     SELECT data_type
