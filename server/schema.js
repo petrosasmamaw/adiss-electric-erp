@@ -279,6 +279,28 @@ async function initSchema() {
     CREATE INDEX IF NOT EXISTS idx_supplier_credits_supplier_name ON supplier_credits(supplier_name);
   `);
 
+  // Create users table for authentication
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      password VARCHAR(255) NOT NULL,
+      role VARCHAR(50) NOT NULL DEFAULT 'user',
+      reset_password_token VARCHAR(255),
+      reset_password_expires TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_users_reset_password_token ON users(reset_password_token);
+  `);
+
   await pool.query(`
     INSERT INTO supplier_credits (supplier_name, amount)
     SELECT 'Electric Vendor Credit', credit

@@ -1,7 +1,7 @@
 import { Fraunces, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import Providers from "@/components/Providers";
-import AppShell from "@/components/AppShell";
+import AuthCheck from "@/components/AuthCheck";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-sans",
@@ -23,7 +23,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${spaceGrotesk.variable} ${fraunces.variable} h-full antialiased`}>
       <body className="min-h-full">
         <Providers>
-          <AppShell>{children}</AppShell>
+          <AuthCheck>{children}</AuthCheck>
         </Providers>
       </body>
     </html>

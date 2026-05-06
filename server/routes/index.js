@@ -1,4 +1,5 @@
 const express = require("express");
+const authRoutes = require("./authRoutes");
 const healthRoutes = require("./healthRoutes");
 const productsRoutes = require("./productsRoutes");
 const reportsRoutes = require("./reportsRoutes");
@@ -8,6 +9,10 @@ const financeRoutes = require("./financeRoutes");
 
 const router = express.Router();
 
+// Auth routes (public)
+router.use("/auth", authRoutes);
+
+// Other routes
 router.use(healthRoutes);
 router.use(productsRoutes);
 router.use(reportsRoutes);
