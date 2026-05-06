@@ -3,10 +3,10 @@ import { useLanguage } from "@/lib/i18n/LanguageContext";
 import { useState } from "react";
 
 const CATEGORY_COLORS = {
-  DC: "bg-sky-500",
-  LEVELING: "bg-amber-500",
-  AC: "bg-indigo-500",
-  GENERIC: "bg-slate-400",
+  DC: "bg-emerald-100 text-emerald-900 border border-emerald-200",
+  LEVELING: "bg-emerald-100 text-emerald-900 border border-emerald-200",
+  AC: "bg-emerald-100 text-emerald-900 border border-emerald-200",
+  GENERIC: "bg-emerald-100 text-emerald-900 border border-emerald-200",
 };
 
 function formatId(item, t) {
@@ -21,7 +21,7 @@ function formatId(item, t) {
 function CategoryPill({ category }) {
   const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.GENERIC;
   return (
-    <span className={`inline-flex items-center gap-2 ${color} text-white text-xs font-semibold px-2 py-1 rounded-full uppercase`}>{category}</span>
+    <span className={`inline-flex items-center gap-2 ${color} text-sm font-bold px-3 py-1 rounded-full uppercase`}>{category}</span>
   );
 }
 
@@ -41,11 +41,11 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
       {/* Top section: name + stock */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h3 className="text-[16px] font-semibold text-slate-900 truncate">{product.name}</h3>
+          <h3 className="text-[18px] font-bold text-emerald-900 truncate">{product.name}</h3>
           <div className="mt-1 flex items-center gap-2 text-sm">
             <CategoryPill category={product.category} />
             <span className="text-slate-300">·</span>
-            <span className="text-xs text-slate-500">
+            <span className="text-sm text-emerald-900 font-semibold">
               {tracked ? t("productCard.trackedByIds") : t("productCard.bulkQuantity")}
             </span>
           </div>
@@ -76,7 +76,7 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
           </div>
         ) : (
           <div className="flex items-center gap-3">
-            <div className="text-sm font-medium text-slate-700">{batches.length} {t("common.batchShort")}</div>
+            <div className="text-sm font-medium text-slate-700">{batches.length === 1 ? '1 batch' : `${batches.length} batches`}</div>
             <div className="text-sm text-slate-500">{stock}/{product.total_quantity ?? stock}</div>
             <div className="flex-1 h-2 bg-slate-100 rounded overflow-hidden">
               <div className="h-2 bg-emerald-500" style={{ width: `${Math.round((stock / Math.max(product.total_quantity || stock || 1, 1)) * 100)}%` }} />
@@ -86,14 +86,7 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
       </div>
 
       {/* Footer: divider + actions */}
-      <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <button type="button" className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm text-slate-700 hover:bg-slate-50">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-            <span>Edit</span>
-          </button>
-        </div>
-
+      <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-end">
         <div>
           <button
             type="button"
