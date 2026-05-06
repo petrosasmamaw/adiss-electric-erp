@@ -23,7 +23,7 @@ export default function StorePage() {
     category: "",
     mode: "bulk",
     batch_name: "",
-    stock: "",
+    stock: "0",
     default_price: "",
     idsText: "",
     has_receipt: true,
@@ -55,7 +55,7 @@ export default function StorePage() {
     event.preventDefault();
 
     const ids = isTrackedMode
-      ? form.idsText
+      ? (form.idsText || "")
           .split(",")
           .map((part) => part.trim())
           .filter(Boolean)
@@ -66,7 +66,7 @@ export default function StorePage() {
       name: form.name,
       category: form.category,
       mode: isTrackedMode ? "id" : "bulk",
-      default_price: Number(form.default_price || 0),
+      default_price: form.default_price ? Number(form.default_price) : undefined,
       image_url: form.image_url || defaultImage,
       has_receipt: Boolean(form.has_receipt),
       ids,
@@ -74,9 +74,10 @@ export default function StorePage() {
 
     if (isTrackedMode) {
       payload.stock = ids.length;
+      if (!ids.length) payload.stock = 0;
     } else {
       payload.stock = form.stock ? Number(form.stock) : 0;
-      payload.batch_name = form.batch_name.trim();
+      if (form.batch_name && form.batch_name.trim()) payload.batch_name = form.batch_name.trim();
     }
 
     await dispatch(
@@ -163,7 +164,6 @@ export default function StorePage() {
                 placeholder={t("store.idsPlaceholder")}
                 value={form.idsText}
                 onChange={(e) => setForm((prev) => ({ ...prev, idsText: e.target.value }))}
-                required
               />
             ) : (
               <>
@@ -172,18 +172,16 @@ export default function StorePage() {
                   placeholder={`${t("common.batch")} 1`}
                   value={form.batch_name}
                   onChange={(e) => setForm((prev) => ({ ...prev, batch_name: e.target.value }))}
-                  required
                 />
                 <InputField
                   label={t("store.stockOptional")}
                   type="text"
                   inputMode="numeric"
                   pattern="[0-9]*"
-                  min="1"
-                  placeholder="100"
+                  min="0"
+                  placeholder="0"
                   value={form.stock}
                   onChange={(e) => setForm((prev) => ({ ...prev, stock: e.target.value }))}
-                  required
                 />
               </>
             )}
@@ -193,10 +191,9 @@ export default function StorePage() {
               type="text"
               inputMode="decimal"
               min="0"
-              placeholder="50000"
+              placeholder="(optional)"
               value={form.default_price}
               onChange={(e) => setForm((prev) => ({ ...prev, default_price: e.target.value }))}
-              required
             />
 
             <label className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-sm font-medium text-slate-700">

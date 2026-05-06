@@ -21,7 +21,7 @@ export default function BuyPage() {
   const [idsText, setIdsText] = useState("");
   const [price, setPrice] = useState("");
   const [hasReceipt, setHasReceipt] = useState(true);
-  const [paymentSource, setPaymentSource] = useState("credit");
+  const [paymentSource, setPaymentSource] = useState("bank");
   const [supplierName, setSupplierName] = useState("");
 
   useEffect(() => {
