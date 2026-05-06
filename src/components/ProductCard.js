@@ -25,16 +25,7 @@ function CategoryPill({ category }) {
   );
 }
 
-function IconPlaceholder({ category }) {
-  const color = CATEGORY_COLORS[category] || CATEGORY_COLORS.GENERIC;
-  return (
-    <div className={`${color} flex items-center justify-center w-20 h-20 rounded-md`}> 
-      <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
-        <path d="M13 2L3 14h7v8l10-12h-7V2z" fill="currentColor" />
-      </svg>
-    </div>
-  );
-}
+// avatar removed — layout is data-first, no decorative avatar
 
 export default function ProductCard({ product, onDelete, deleting = false }) {
   const tracked = Array.isArray(product.ids) && product.ids.length > 0;
@@ -46,84 +37,74 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
   const stockColor = stockStatus === "good" ? "bg-emerald-600 text-white" : stockStatus === "warning" ? "bg-amber-500 text-white" : "bg-rose-500 text-white";
 
   return (
-    <article className="relative overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200 max-h-[220px]">
+    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow hover:shadow-lg transition-transform duration-200 w-[220px]">
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 p-3">
-        <div className="flex items-start gap-3">
-          <div className="flex-shrink-0">
-            <IconPlaceholder category={product.category} />
-          </div>
-
-          <div className="min-w-0">
-            <h3 className="font-semibold text-sm text-slate-900 truncate">{product.name}</h3>
-            <div className="mt-1">
-              <CategoryPill category={product.category} />
-            </div>
-            <div className="mt-2">
-              <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-slate-100 text-xs font-medium text-slate-700">
-                {tracked ? `🏷️ ${t("productCard.trackedByIds")}` : `📦 ${t("productCard.bulkQuantity")}`}
-              </span>
-            </div>
+    <article className="bg-white border border-slate-200 rounded-[12px] p-4 shadow-sm hover:shadow-lg transition-all duration-150">
+      {/* Top section: name + stock */}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-[16px] font-semibold text-slate-900 truncate">{product.name}</h3>
+          <div className="mt-1 flex items-center gap-2 text-sm">
+            <CategoryPill category={product.category} />
+            <span className="text-slate-300">·</span>
+            <span className="text-xs text-slate-500">
+              {tracked ? t("productCard.trackedByIds") : t("productCard.bulkQuantity")}
+            </span>
           </div>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="p-1 rounded-md text-rose-600 hover:bg-rose-50 disabled:opacity-60"
-              onClick={() => onDelete?.(product)}
-              disabled={deleting}
-              aria-label={t("common.delete")}
-            >
-              🗑️
-            </button>
-          </div>
-
-          <div className={`text-xs font-semibold px-3 py-1 rounded-full ${stockColor}`}>
-            {stock} {t("productCard.stock")}
-          </div>
+        <div className="flex-shrink-0 text-right">
+          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${stockColor}`}>{stock}</div>
         </div>
       </div>
 
-      {/* Body */}
-      <div className="px-3 pb-3">
-        <div className="flex items-baseline justify-between">
-          <div className="text-xs uppercase tracking-widest text-slate-500">{t("productCard.defaultPrice")}</div>
-          <div className="text-2xl font-bold text-slate-900">Rs {Number(product.default_price || 0).toFixed(2)}</div>
-        </div>
-
-        <div className="mt-3">
-          {tracked ? (
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {product.ids.map((item) => (
-                <div key={item.id} className="flex-none px-2 py-1 rounded-full bg-slate-100 text-xs text-slate-800 font-medium mr-2">
-                  {item.id}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {batches.slice(0, 3).map((batch) => (
-                <div key={batch.id} className="flex items-center justify-between text-sm">
-                  <div className="min-w-0 truncate font-medium">{batch.batch_name || `${t("common.batch")} ${batch.batch_no}`}</div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-xs text-slate-500">{batch.remaining_quantity}/{batch.quantity}</div>
-                    <div className="w-24 h-2 bg-slate-100 rounded overflow-hidden">
-                      <div className="h-2 bg-emerald-500" style={{ width: `${Math.round((batch.remaining_quantity / Math.max(batch.quantity, 1)) * 100)}%` }} />
-                    </div>
-                  </div>
-                </div>
-              ))}
-              {batches.length > 3 && (
-                <div className="text-xs text-slate-400">+{batches.length - 3} {t("common.more")}</div>
-              )}
-            </div>
-          )}
-        </div>
+      {/* Middle section: price */}
+      <div className="mt-3 flex items-center justify-between">
+        <div className="text-xs uppercase tracking-widest text-slate-500">{t("productCard.defaultPrice")}</div>
+        <div className="text-lg font-bold text-slate-900 whitespace-nowrap">Rs {Number(product.default_price || 0).toFixed(2)}</div>
       </div>
 
-      {/* Hover actions overlay removed (edit button removed) */}
+      {/* Bottom section: batches or ids */}
+      <div className="mt-3">
+        {tracked ? (
+          <div className="flex gap-2 overflow-x-auto" style={{ msOverflowStyle: 'none', scrollbarWidth: 'none' }}>
+            {product.ids.map((item) => (
+              <div key={item.id} className="flex-none px-3 py-1 rounded-lg bg-slate-50 border border-slate-100 text-xs text-slate-800 font-medium mr-2">
+                {item.id}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3">
+            <div className="text-sm font-medium text-slate-700">{batches.length} {t("common.batchShort")}</div>
+            <div className="text-sm text-slate-500">{stock}/{product.total_quantity ?? stock}</div>
+            <div className="flex-1 h-2 bg-slate-100 rounded overflow-hidden">
+              <div className="h-2 bg-emerald-500" style={{ width: `${Math.round((stock / Math.max(product.total_quantity || stock || 1, 1)) * 100)}%` }} />
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Footer: divider + actions */}
+      <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <button type="button" className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm text-slate-700 hover:bg-slate-50">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5M18.5 2.5l3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            <span>Edit</span>
+          </button>
+        </div>
+
+        <div>
+          <button
+            type="button"
+            onClick={() => onDelete?.(product)}
+            disabled={deleting}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm text-rose-600 hover:bg-rose-50 disabled:opacity-60"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M10 3h4a1 1 0 011 1v2H9V4a1 1 0 011-1z"/></svg>
+            <span>Delete</span>
+          </button>
+        </div>
+      </div>
     </article>
   );
-}
