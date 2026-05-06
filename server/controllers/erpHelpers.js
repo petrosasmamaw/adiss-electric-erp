@@ -42,15 +42,15 @@ function parseBoolean(value, fallback = true) {
 
 function getRangeClause(range) {
   if (range === "today") {
-    return "AND created_at::date = CURRENT_DATE";
+    return "AND ir.created_at::date = CURRENT_DATE";
   }
 
   if (range === "7d") {
-    return "AND created_at >= NOW() - INTERVAL '7 days'";
+    return "AND ir.created_at >= NOW() - INTERVAL '7 days'";
   }
 
   if (range === "30d") {
-    return "AND created_at >= NOW() - INTERVAL '30 days'";
+    return "AND ir.created_at >= NOW() - INTERVAL '30 days'";
   }
 
   return "";

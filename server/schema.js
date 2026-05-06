@@ -247,6 +247,14 @@ async function initSchema() {
   `);
 
   await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_item_reports_product_created_at ON item_reports(product_id, created_at DESC);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_item_reports_receipt_mismatch ON item_reports(receipt_mismatch);
+  `);
+
+  await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
   `);
 
