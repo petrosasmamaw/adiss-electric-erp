@@ -35,7 +35,7 @@ export default function BuyPage() {
   );
 
   const productIsTracked = Array.isArray(selectedProduct?.ids) && selectedProduct.ids.length > 0;
-
+ 
   useEffect(() => {
     if (!selectedProduct) return;
     setMode(productIsTracked ? "id" : "bulk");
@@ -44,6 +44,7 @@ export default function BuyPage() {
     setQuantity("1");
   }, [productIsTracked, selectedProduct]);
 
+  
   const isTracked = mode === "id";
   const fallbackUnitPrice = Number(price || selectedProduct?.default_price || 0);
 
