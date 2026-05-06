@@ -33,7 +33,7 @@ export default function AuthCheck({ children }) {
 
     if (data?.user) {
       // Session is valid, update Redux
-      dispatch(setCredentials({ user: data.user }));
+      dispatch(setCredentials({ user: data.user, accessToken: data.accessToken }));
       // Redirect from login page if already authenticated
       if (isPublicRoute && pathname === "/login") {
         router.push("/dashboard");

@@ -35,13 +35,9 @@ async function login(req, res) {
     }
 
     const accessToken = generateAccessToken(user.id, user.email);
-    const refreshToken = generateRefreshToken(user.id, user.email);
-    const cookieOptions = getCookieOptions(isProduction);
-
-    res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); // 15 minutes
-    res.cookie("refreshToken", refreshToken, cookieOptions);
 
     res.json({
+      accessToken,
       user: {
         id: user.id,
         email: user.email,
@@ -67,108 +63,41 @@ async function logout(req, res) {
 }
 
 async function refresh(req, res) {
+  // With token-based auth, we don't need refresh endpoint
+  // Clients handle token expiration by re-logging in
+  return res.status(401).json({ error: "Token expired. Please login again." });
+}
+
+async function getSession(req, res) {
   try {
-    const refreshToken = req.cookies.refreshToken;
-
-    if (!refreshToken) {
-      return res.status(401).json({ error: "Refresh token not found" });
+    // Get token from Authorization header (token-based auth only)
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const decoded = verifyRefreshToken(refreshToken);
+    const token = authHeader.substring(7); // Remove "Bearer " prefix
+    const jwt = require("jsonwebtoken");
+    const { ACCESS_TOKEN_SECRET } = require("../config/jwt");
 
-    if (!decoded) {
-      return res.status(401).json({ error: "Invalid or expired refresh token" });
-    }
-
-    const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [decoded.userId]);
+    const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
+    const { rows } = await pool.query("SELECT id, email, role FROM users WHERE id = $1", [decoded.userId]);
 
     if (rows.length === 0) {
       return res.status(401).json({ error: "User not found" });
     }
 
-    const user = rows[0];
-    const accessToken = generateAccessToken(user.id, user.email);
-    const cookieOptions = getCookieOptions(isProduction);
-
-    res.cookie("accessToken", accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); // 15 minutes
-
-    res.json({
+    return res.json({
+      accessToken: token,
       user: {
-        id: user.id,
-        email: user.email,
-        role: user.role,
+        id: rows[0].id,
+        email: rows[0].email,
+        role: rows[0].role,
       },
     });
   } catch (error) {
-    console.error("Refresh error:", error);
-    res.status(500).json({ error: "Failed to refresh token" });
-  }
-}
-
-async function getSession(req, res) {
-  try {
-    const token = req.cookies.accessToken;
-
-    if (!token) {
-      return res.status(401).json({ error: "Not authenticated" });
-    }
-
-    // Try to verify access token, if expired try refresh
-    const jwt = require("jsonwebtoken");
-    const { ACCESS_TOKEN_SECRET } = require("../config/jwt");
-
-    try {
-      const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET);
-      const { rows } = await pool.query("SELECT id, email, role FROM users WHERE id = $1", [decoded.userId]);
-
-      if (rows.length === 0) {
-        return res.status(401).json({ error: "User not found" });
-      }
-
-      return res.json({
-        user: {
-          id: rows[0].id,
-          email: rows[0].email,
-          role: rows[0].role,
-        },
-      });
-    } catch (tokenError) {
-      // Token expired, try refresh
-      const refreshToken = req.cookies.refreshToken;
-
-      if (!refreshToken) {
-        return res.status(401).json({ error: "Session expired" });
-      }
-
-      const decoded = verifyRefreshToken(refreshToken);
-
-      if (!decoded) {
-        return res.status(401).json({ error: "Session expired" });
-      }
-
-      const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [decoded.userId]);
-
-      if (rows.length === 0) {
-        return res.status(401).json({ error: "User not found" });
-      }
-
-      const user = rows[0];
-      const newAccessToken = generateAccessToken(user.id, user.email);
-      const cookieOptions = getCookieOptions(isProduction);
-
-      res.cookie("accessToken", newAccessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
-
-      return res.json({
-        user: {
-          id: user.id,
-          email: user.email,
-          role: user.role,
-        },
-      });
-    }
-  } catch (error) {
     console.error("Get session error:", error);
-    res.status(500).json({ error: "Failed to get session" });
+    res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 
