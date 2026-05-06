@@ -96,7 +96,13 @@ export default function StorePage() {
   async function handleDelete(product) {
     const confirmed = window.confirm(t("store.deleteConfirm", { name: product.name }));
     if (!confirmed) return;
-    await dispatch(deleteProduct(product.id));
+    try {
+      await dispatch(deleteProduct(product.id)).unwrap();
+    } catch (err) {
+      // Network or server error — show a clear message and do not remove the product
+      const msg = err?.message || String(err || "Failed to delete");
+      window.alert(t("store.deleteFailed") + ": " + msg);
+    }
   }
 
   return (

@@ -181,6 +181,8 @@ export const translations = {
       failed: "Failed to process buy",
       searchPlaceholder: "Search items to buy...",
       noSearchResults: "No products match your search.",
+      itemsAvailable: "items available",
+      batchesAvailable: "batches available",
     },
     sell: {
       title: "Sell Electrical Items",
@@ -470,6 +472,8 @@ export const translations = {
       failed: "ግዢውን ማስኬድ አልተቻለም",
       searchPlaceholder: "ለግዢ እቃዎችን ፈልግ...",
       noSearchResults: "ፍለጋዎን የሚዛመድ እቃ አልተገኘም።",
+      itemsAvailable: "እቃዎች ይገኛሉ",
+      batchesAvailable: "ባቾች ይገኛሉ",
     },
     sell: {
       title: "ኤሌክትሪክ ሽያጭ አስፈጽም",

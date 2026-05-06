@@ -289,6 +289,41 @@ export default function BuyPage() {
                 </div>
               </Card>
 
+              {productIsTracked && Array.isArray(selectedProduct?.ids) && selectedProduct.ids.length > 0 && (
+                <Card variant="elevated" className="p-6 border border-purple-200 bg-purple-50">
+                  <h4 className="mb-3 text-sm font-bold uppercase tracking-widest text-purple-700">{t("common.ids")}</h4>
+                  <p className="text-sm text-slate-700 max-h-24 overflow-y-auto space-y-2">
+                    {selectedProduct.ids.map((item, index) => {
+                      const idValue = typeof item === 'object' ? item.id : item;
+                      const idPrice = typeof item === 'object' ? item.buy_price : null;
+                      return (
+                        <span key={index} className="inline-block mr-2 mb-1 px-2.5 py-1.5 bg-white rounded border border-purple-200 text-xs font-mono text-slate-800 shadow-sm">
+                          {idValue} {idPrice ? `(Rs ${Number(idPrice).toFixed(0)})` : ''}{item?.has_receipt === false ? ` (${t("common.withoutReceipt")})` : ""}
+                        </span>
+                      );
+                    })}
+                  </p>
+                  <p className="text-xs text-purple-600 mt-3 font-semibold">{t("common.total")}: {selectedProduct.ids.length} {t("buy.itemsAvailable")}</p>
+                </Card>
+              )}
+
+              {!productIsTracked && Array.isArray(selectedProduct?.batches) && selectedProduct.batches.length > 0 && (
+                <Card variant="elevated" className="p-6 border border-sky-200 bg-sky-50">
+                  <h4 className="mb-3 text-sm font-bold uppercase tracking-widest text-sky-700">{t("common.batches")}</h4>
+                  <div className="space-y-2 max-h-24 overflow-y-auto">
+                    {selectedProduct.batches.map((batch) => (
+                      <div key={batch.id} className="p-2.5 bg-white rounded border border-sky-200 text-xs">
+                        <p className="font-semibold text-slate-800">{batch.batch_name || `${t("common.batch")} ${batch.batch_no}`}</p>
+                        <p className="text-slate-600 text-xs mt-1">
+                          {batch.remaining_quantity} {t("sell.left")} @ Rs {Number(batch.buy_price || 0).toFixed(2)}{batch.has_receipt ? "" : ` (${t("common.withoutReceipt")})`}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-sky-600 mt-3 font-semibold">{t("common.total")}: {selectedProduct.batches.length} {t("buy.batchesAvailable")}</p>
+                </Card>
+              )}
+
               <Card variant="elevated" className="p-6">
                 <h4 className="mb-4 text-lg font-bold text-slate-900">{t("buy.orderSummary")}</h4>
                 <div className="space-y-3">

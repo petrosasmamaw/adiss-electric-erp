@@ -96,22 +96,23 @@ async function getProducts(req, res) {
   try {
     const search = String(req.query.search || "").trim();
     const values = [];
-    let where = "";
+    let where = "WHERE p.available = TRUE";
 
     if (search) {
       values.push(`%${search}%`);
-      where = "WHERE p.name ILIKE $1 OR p.category ILIKE $1";
+      where = "WHERE (p.name ILIKE $1 OR p.category ILIKE $1) AND p.available = TRUE";
     }
 
     const { rows } = await getPool().query(
       `
-        SELECT
-          p.id,
-          p.name,
-          p.category,
-          p.stock,
-          p.default_price,
-          p.ids,
+            SELECT
+              p.id,
+              p.name,
+              p.category,
+              p.stock,
+              p.default_price,
+              p.ids,
+              p.available,
           COALESCE(
             jsonb_agg(
               jsonb_build_object(
@@ -331,19 +332,113 @@ async function deleteProduct(req, res) {
     return res.status(400).json({ error: "Invalid product id" });
   }
 
+  const client = await getPool().connect();
+
   try {
-    const { rowCount } = await getPool().query(
-      `DELETE FROM products WHERE id = $1 RETURNING id`,
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `SELECT id, name, stock, default_price, ids, available FROM products WHERE id = $1 FOR UPDATE`,
       [productId]
     );
 
-    if (!rowCount) {
+    if (!rows.length) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ error: "Product not found" });
     }
 
+    const product = rows[0];
+    if (product.available === false) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Product not available" });
+    }
+    const currentIds = normalizeStoredIds(product.ids, parseNumeric(product.default_price, 0));
+
+    // If tracked by IDs, log a delete report per ID
+    if (currentIds.length > 0) {
+      let totalRemovedValue = 0;
+      for (let i = 0; i < currentIds.length; i += 1) {
+        const item = currentIds[i];
+        const idValue = String(item.id || "").trim();
+        const itemBuy = parseNumeric(item.buy_price, parseNumeric(product.default_price, 0));
+        totalRemovedValue += itemBuy;
+        await logItemReport(client, {
+          productId: productId,
+          itemId: idValue,
+          batchId: null,
+          batchNo: null,
+          batchName: null,
+          type: "delete",
+          quantity: 1,
+          buyPrice: itemBuy,
+          sellPrice: null,
+          price: itemBuy,
+          profit: 0,
+          remainingStock: 0,
+          hasReceipt: parseBoolean(item.has_receipt, true),
+        });
+      }
+
+      // record a transaction describing the removed stock value
+      if (totalRemovedValue > 0) {
+        await logTransaction(client, productId, "delete", totalRemovedValue, { hasReceipt: true, receiptMismatch: false });
+      } else {
+        // still log a zero-amount delete transaction for completeness
+        await logTransaction(client, productId, "delete", 0, { hasReceipt: true, receiptMismatch: false });
+      }
+    } else {
+      // Bulk product: log delete for remaining batches
+      const { rows: batchRows } = await client.query(
+        `SELECT id, batch_no, batch_name, remaining_quantity, buy_price, has_receipt FROM product_batches WHERE product_id = $1 FOR UPDATE`,
+        [productId]
+      );
+
+      const activeBatches = normalizeBatches(batchRows);
+      let totalRemovedValue = 0;
+      for (let j = 0; j < activeBatches.length; j += 1) {
+        const batch = activeBatches[j];
+        if (batch.remaining_quantity > 0) {
+          const batchValue = parseNumeric(batch.buy_price, 0) * Number(batch.remaining_quantity || 0);
+          totalRemovedValue += batchValue;
+          await logItemReport(client, {
+            productId: productId,
+            itemId: null,
+            batchId: batch.id,
+            batchNo: batch.batch_no,
+            batchName: batch.batch_name || null,
+            type: "delete",
+            quantity: batch.remaining_quantity,
+            buyPrice: parseNumeric(batch.buy_price, 0),
+            sellPrice: null,
+            price: parseNumeric(batch.buy_price, 0),
+            profit: 0,
+            remainingStock: 0,
+            hasReceipt: parseBoolean(batch.has_receipt, true),
+          });
+        }
+      }
+
+      if (totalRemovedValue > 0) {
+        await logTransaction(client, productId, "delete", totalRemovedValue, { hasReceipt: true, receiptMismatch: false });
+      } else {
+        await logTransaction(client, productId, "delete", 0, { hasReceipt: true, receiptMismatch: false });
+      }
+    }
+
+    // Soft-delete: mark product unavailable and clear stock/ids and batches remaining
+    await client.query(`UPDATE products SET available = FALSE, stock = 0, ids = '[]'::jsonb, updated_at = NOW() WHERE id = $1`, [productId]);
+
+    // zero out remaining quantities for batches to avoid future sells
+    await client.query(`UPDATE product_batches SET remaining_quantity = 0, updated_at = NOW() WHERE product_id = $1`, [productId]);
+
+    await client.query("COMMIT");
     return res.json({ ok: true });
-  } catch (_error) {
+  } catch (error) {
+    await client.query("ROLLBACK");
+    console.error("deleteProduct error:", error);
     return res.status(500).json({ error: "Failed to delete electrical item" });
+  } finally {
+    client.release();
   }
 }
 
@@ -370,7 +465,7 @@ async function buyProduct(req, res) {
     await client.query("BEGIN");
 
     const { rows } = await client.query(
-      `SELECT id, name, stock, default_price, ids FROM products WHERE id = $1 FOR UPDATE`,
+      `SELECT id, name, stock, default_price, ids, available FROM products WHERE id = $1 FOR UPDATE`,
       [productId]
     );
 
@@ -380,6 +475,10 @@ async function buyProduct(req, res) {
     }
 
     const product = rows[0];
+    if (product.available === false) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Product not available" });
+    }
     const unitPrice = parseNumeric(priceRaw, parseNumeric(product.default_price, 0));
     const hasReceipt = parseBoolean(hasReceiptRaw, true);
     const paymentSourceInput = String(paymentSourceRaw || "credit").trim().toLowerCase();
@@ -630,7 +729,7 @@ async function sellProduct(req, res) {
     await client.query("BEGIN");
 
     const { rows } = await client.query(
-      `SELECT id, name, stock, default_price, ids FROM products WHERE id = $1 FOR UPDATE`,
+      `SELECT id, name, stock, default_price, ids, available FROM products WHERE id = $1 FOR UPDATE`,
       [productId]
     );
 
@@ -640,6 +739,10 @@ async function sellProduct(req, res) {
     }
 
     const product = rows[0];
+    if (product.available === false) {
+      await client.query("ROLLBACK");
+      return res.status(404).json({ error: "Product not available" });
+    }
     const currentIds = normalizeStoredIds(product.ids, parseNumeric(product.default_price, 0));
 
     if (product.stock <= 0) {
@@ -792,18 +895,15 @@ async function sellProduct(req, res) {
       [newStock, productId]
     );
 
-    if (newRemaining === 0) {
-      await client.query(`DELETE FROM product_batches WHERE id = $1`, [selectedBatch.id]);
-    } else {
-      await client.query(
-        `
-          UPDATE product_batches
-          SET remaining_quantity = $1, updated_at = NOW()
-          WHERE id = $2
-        `,
-        [newRemaining, selectedBatch.id]
-      );
-    }
+    // Always update batch to remaining_quantity (even if 0), don't delete
+    await client.query(
+      `
+        UPDATE product_batches
+        SET remaining_quantity = $1, updated_at = NOW()
+        WHERE id = $2
+      `,
+      [newRemaining, selectedBatch.id]
+    );
 
     await applyFinanceEntry(client, {
       accountType: "balance",

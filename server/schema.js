@@ -9,6 +9,7 @@ async function initSchema() {
       stock INTEGER NOT NULL DEFAULT 0 CHECK (stock >= 0),
       default_price NUMERIC(12, 2) NOT NULL CHECK (default_price >= 0),
       ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+      available BOOLEAN NOT NULL DEFAULT TRUE,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
@@ -97,6 +98,12 @@ async function initSchema() {
     ALTER COLUMN ids SET DEFAULT '[]'::jsonb;
   `);
 
+  // ensure existing rows have available = TRUE
+  await pool.query(`
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS available BOOLEAN NOT NULL DEFAULT TRUE;
+  `);
+  await pool.query(`UPDATE products SET available = TRUE WHERE available IS NULL;`);
+
   await pool.query(`
     INSERT INTO product_batches (product_id, batch_no, batch_name, quantity, remaining_quantity, buy_price)
     SELECT p.id, 1, 'Batch 1', p.stock, p.stock, p.default_price
@@ -129,7 +136,7 @@ async function initSchema() {
   await pool.query(`ALTER TABLE item_reports DROP CONSTRAINT IF EXISTS item_reports_type_check;`);
   await pool.query(`
     ALTER TABLE item_reports
-    ADD CONSTRAINT item_reports_type_check CHECK (type IN ('buy', 'install_stock', 'sell'));
+    ADD CONSTRAINT item_reports_type_check CHECK (type IN ('buy', 'install_stock', 'sell', 'delete'));
   `);
 
   await pool.query(`
@@ -177,7 +184,7 @@ async function initSchema() {
   await pool.query(`ALTER TABLE transactions DROP CONSTRAINT IF EXISTS transactions_type_check;`);
   await pool.query(`
     ALTER TABLE transactions
-    ADD CONSTRAINT transactions_type_check CHECK (type IN ('buy', 'install_stock', 'sell'));
+    ADD CONSTRAINT transactions_type_check CHECK (type IN ('buy', 'install_stock', 'sell', 'delete'));
   `);
 
   await pool.query(`ALTER TABLE transactions ADD COLUMN IF NOT EXISTS ethiopian_date TEXT;`);
