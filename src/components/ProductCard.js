@@ -37,8 +37,6 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
   const stockColor = stockStatus === "good" ? "bg-emerald-600 text-white" : stockStatus === "warning" ? "bg-amber-500 text-white" : "bg-rose-500 text-white";
 
   return (
-    <article className="relative overflow-hidden rounded-2xl border border-slate-200 bg-white shadow hover:shadow-lg transition-transform duration-200 w-[220px]">
-      {/* Header */}
     <article className="bg-white border border-slate-200 rounded-[12px] p-4 shadow-sm hover:shadow-lg transition-all duration-150">
       {/* Top section: name + stock */}
       <div className="flex items-start justify-between gap-3">
@@ -54,7 +52,9 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
         </div>
 
         <div className="flex-shrink-0 text-right">
-          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${stockColor}`}>{stock}</div>
+          <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold ${stockColor}`}>
+            {t("productCard.stock")} {stock}
+          </div>
         </div>
       </div>
 
@@ -108,3 +108,4 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
       </div>
     </article>
   );
+  }
