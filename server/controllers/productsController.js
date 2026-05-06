@@ -212,12 +212,12 @@ async function createProduct(req, res) {
     });
   }
 
-  if (!isTrackedMode && stock <= 0) {
-    return res.status(400).json({ error: "Bulk mode requires stock > 0" });
+  if (!isTrackedMode && stock < 0) {
+    return res.status(400).json({ error: "stock must be >= 0" });
   }
 
-  if (!isTrackedMode && !batchName) {
-    return res.status(400).json({ error: "batch_name is required for bulk mode" });
+  if (!isTrackedMode && stock > 0 && !batchName) {
+    return res.status(400).json({ error: "batch_name is required for bulk mode when stock > 0" });
   }
 
   try {

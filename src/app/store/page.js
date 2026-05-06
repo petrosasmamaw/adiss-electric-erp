@@ -66,7 +66,7 @@ export default function StorePage() {
       name: form.name,
       category: form.category,
       mode: isTrackedMode ? "id" : "bulk",
-      default_price: form.default_price ? Number(form.default_price) : undefined,
+      default_price: Number(form.default_price || 0),
       image_url: form.image_url || defaultImage,
       has_receipt: Boolean(form.has_receipt),
       ids,
