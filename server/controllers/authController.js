@@ -52,9 +52,8 @@ async function login(req, res) {
 
 async function logout(req, res) {
   try {
-    res.clearCookie("accessToken");
-    res.clearCookie("refreshToken");
-
+    // With token-based auth, logout is just a client-side action
+    // The token is deleted from Redux on the frontend
     res.json({ message: "Logged out successfully" });
   } catch (error) {
     console.error("Logout error:", error);

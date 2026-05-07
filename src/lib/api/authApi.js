@@ -4,12 +4,26 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
+// Create base query with dynamic Authorization header
+const baseQuery = fetchBaseQuery({
+  baseUrl: API_URL,
+  credentials: "include",
+  prepareHeaders: (headers, { getState }) => {
+    // Get token from Redux state
+    const state = getState();
+    const token = state.auth?.accessToken;
+    
+    // Add Authorization header if token exists
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+    return headers;
+  },
+});
+
 export const authApi = createApi({
   reducerPath: "authApi",
-  baseQuery: fetchBaseQuery({
-    baseUrl: API_URL,
-    credentials: "include",
-  }),
+  baseQuery,
   tagTypes: ["Auth"],
   endpoints: (builder) => ({
     login: builder.mutation({

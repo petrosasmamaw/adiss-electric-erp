@@ -28,7 +28,7 @@ export default function LoginPage() {
 
     try {
       const response = await login({ email: email.toLowerCase(), password }).unwrap();
-      dispatch(setCredentials({ user: response.user }));
+      dispatch(setCredentials({ user: response.user, accessToken: response.accessToken }));
       router.push("/dashboard");
     } catch (err) {
       setError(err?.data?.error || "Failed to login");
@@ -150,26 +150,7 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Styles for animation */}
-      <style jsx>{`
-        @keyframes blob {
-          0%, 100% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-      `}</style>
+      {/* Animation classes moved to global CSS */}
     </div>
   );
 }
