@@ -8,6 +8,21 @@ export default function ChartCard({ title, subtitle, icon: Icon, children, class
 
   useEffect(() => {
     setMounted(true);
+    
+    // Suppress Recharts width/height warnings from console
+    const originalWarn = console.warn;
+    const rechartWarningFilter = (...args) => {
+      const message = args[0]?.toString?.() || "";
+      if (message.includes("The width") && message.includes("of chart")) {
+        return; // Suppress this warning
+      }
+      originalWarn(...args);
+    };
+    console.warn = rechartWarningFilter;
+
+    return () => {
+      console.warn = originalWarn;
+    };
   }, []);
 
   return (
@@ -25,7 +40,7 @@ export default function ChartCard({ title, subtitle, icon: Icon, children, class
       </div>
 
       {mounted ? (
-        <div className="h-[280px] w-full" style={{ minWidth: 0, minHeight: 0 }}>{children}</div>
+        <div className="h-[280px] w-full" style={{ minWidth: 0, minHeight: 0, display: "block" }}>{children}</div>
       ) : (
         <div className="h-[280px] w-full flex items-center justify-center text-sm text-slate-400">Loading chart...</div>
       )}
