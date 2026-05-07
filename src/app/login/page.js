@@ -36,32 +36,32 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-3 md:p-4">
       {/* Background decoration */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
       <div className="absolute -bottom-8 left-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
 
       <div className="relative w-full max-w-md">
         {/* Card */}
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-8 space-y-6">
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-2xl p-6 md:p-8 space-y-4 md:space-y-6">
           {/* Header */}
-          <div className="text-center space-y-2">
-            <h1 className="text-4xl font-bold text-white">Welcome Back</h1>
-            <p className="text-slate-300 text-sm">Sign in to your Electric ERP account</p>
+          <div className="text-center space-y-1 md:space-y-2">
+            <h1 className="text-2xl md:text-4xl font-bold text-white">Welcome Back</h1>
+            <p className="text-slate-300 text-xs md:text-sm">Sign in to your Electric ERP account</p>
           </div>
 
           {/* Error Alert */}
           {error && (
-            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-4">
-              <p className="text-red-200 text-sm font-medium">{error}</p>
+            <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3 md:p-4">
+              <p className="text-red-200 text-xs md:text-sm font-medium">{error}</p>
             </div>
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
             {/* Email Input */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-200 mb-2">
+              <label htmlFor="email" className="block text-xs md:text-sm font-medium text-slate-200 mb-2">
                 Email Address
               </label>
               <input
@@ -70,14 +70,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                className="w-full px-3 md:px-4 py-2 md:py-3 bg-white/5 border border-white/20 rounded-lg text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                 disabled={isLoading}
               />
             </div>
 
             {/* Password Input */}
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-200 mb-2">
+              <label htmlFor="password" className="block text-xs md:text-sm font-medium text-slate-200 mb-2">
                 Password
               </label>
               <div className="relative">
@@ -87,7 +87,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className="w-full px-3 md:px-4 py-2 md:py-3 bg-white/5 border border-white/20 rounded-lg text-white text-sm placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   disabled={isLoading}
                 />
                 <button

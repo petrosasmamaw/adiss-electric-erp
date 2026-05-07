@@ -44,7 +44,7 @@ export default function BuyPage() {
     setQuantity("1");
   }, [productIsTracked, selectedProduct]);
 
-  
+
   const isTracked = mode === "id";
   const fallbackUnitPrice = Number(price || selectedProduct?.default_price || 0);
 
@@ -147,12 +147,12 @@ export default function BuyPage() {
   }
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 md:space-y-8">
       <SectionHeader subtitle={t("buy.subtitle")} title={t("buy.title")} />
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        <Card variant="elevated" className="p-8">
-          <h3 className="mb-6 text-2xl font-bold text-slate-900">{t("buy.title")}</h3>
+      <div className="grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-2">
+        <Card variant="elevated" className="p-4 md:p-8">
+          <h3 className="mb-4 md:mb-6 text-xl md:text-2xl font-bold text-slate-900">{t("buy.title")}</h3>
 
           <form onSubmit={onSubmit} className="space-y-5">
             <SearchableProductSelect
@@ -264,7 +264,7 @@ export default function BuyPage() {
           </form>
         </Card>
 
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           {selectedProduct ? (
             <>
               <Card variant="gradient" className="p-8">
@@ -291,9 +291,9 @@ export default function BuyPage() {
               </Card>
 
               {productIsTracked && Array.isArray(selectedProduct?.ids) && selectedProduct.ids.length > 0 && (
-                <Card variant="elevated" className="p-6 border border-purple-200 bg-purple-50">
-                  <h4 className="mb-3 text-sm font-bold uppercase tracking-widest text-purple-700">{t("common.ids")}</h4>
-                  <p className="text-sm text-slate-700 max-h-24 overflow-y-auto space-y-2">
+                <Card variant="elevated" className="p-4 md:p-6 border border-purple-200 bg-purple-50">
+                  <h4 className="mb-2 md:mb-3 text-xs md:text-sm font-bold uppercase tracking-widest text-purple-700">{t("common.ids")}</h4>
+                  <p className="text-xs md:text-sm text-slate-700 max-h-24 overflow-y-auto space-y-2">
                     {selectedProduct.ids.map((item, index) => {
                       const idValue = typeof item === 'object' ? item.id : item;
                       const idPrice = typeof item === 'object' ? item.buy_price : null;
@@ -309,8 +309,8 @@ export default function BuyPage() {
               )}
 
               {!productIsTracked && Array.isArray(selectedProduct?.batches) && selectedProduct.batches.length > 0 && (
-                <Card variant="elevated" className="p-6 border border-sky-200 bg-sky-50">
-                  <h4 className="mb-3 text-sm font-bold uppercase tracking-widest text-sky-700">{t("common.batches")}</h4>
+                <Card variant="elevated" className="p-4 md:p-6 border border-sky-200 bg-sky-50">
+                  <h4 className="mb-2 md:mb-3 text-xs md:text-sm font-bold uppercase tracking-widest text-sky-700">{t("common.batches")}</h4>
                   <div className="space-y-2 max-h-24 overflow-y-auto">
                     {selectedProduct.batches.map((batch) => (
                       <div key={batch.id} className="p-2.5 bg-white rounded border border-sky-200 text-xs">

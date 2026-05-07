@@ -92,30 +92,30 @@ export default function DashboardPage() {
   }));
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 md:space-y-8">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/50 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 p-8 md:p-12 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-2xl md:rounded-3xl border border-white/50 bg-gradient-to-br from-blue-600 via-blue-500 to-purple-600 p-6 md:p-8 lg:p-12 text-white shadow-xl">
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-white/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-20 -left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
         
-        <div className="relative space-y-3">
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight">
+        <div className="relative space-y-2 md:space-y-3">
+          <h1 className="text-2xl md:text-4xl lg:text-5xl font-bold tracking-tight">
             {t("dashboard.title")}
           </h1>
-          <p className="text-lg text-white/80 max-w-2xl">
+          <p className="text-sm md:text-base lg:text-lg text-white/80 max-w-2xl">
             {t("dashboard.subtitle")}
           </p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-center md:justify-between">
         <SectionHeader
           subtitle={t("common.overview")}
           title={t("dashboard.statistics")}
         />
         <select
-          className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-slate-900 font-medium"
+          className="px-3 md:px-4 py-2 md:py-2.5 rounded-xl border border-slate-200 bg-white/70 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all text-slate-900 font-medium text-sm"
           value={range}
           onChange={(e) => setRange(e.target.value)}
         >
@@ -127,7 +127,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label={t("dashboard.totalSales")}
           value={asCurrency(analytics.salesTotal)}
@@ -163,7 +163,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:gap-5 xl:grid-cols-2">
         <ChartCard
           title={t("dashboard.salesTrendTitle")}
           subtitle={t("dashboard.salesTrendSubtitle")}

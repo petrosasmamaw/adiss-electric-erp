@@ -105,7 +105,7 @@ export default function ReportsPage() {
   ];
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 md:space-y-8">
       {/* Hero */}
       <div>
         <SectionHeader
@@ -115,11 +115,11 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <Card variant="elevated" className="p-6 flex flex-col md:flex-row gap-4 items-end">
-        <div className="flex-1">
-          <label className="block text-sm font-medium text-slate-700 mb-2">{t("reports.filterByProduct")}</label>
+      <Card variant="elevated" className="p-3 md:p-6 flex flex-col gap-3 md:gap-4 md:flex-row md:items-end">
+        <div className="w-full flex-1">
+          <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.filterByProduct")}</label>
           <select
-            className="w-full px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
+            className="w-full px-3 md:px-4 py-2 md:py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900 text-sm"
             value={productId}
             onChange={(e) => setProductId(e.target.value)}
           >
@@ -132,10 +132,10 @@ export default function ReportsPage() {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">{t("reports.timeRange")}</label>
+        <div className="w-full md:w-auto">
+          <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.timeRange")}</label>
           <select
-            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
+            className="w-full px-3 md:px-4 py-2 md:py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900 text-sm"
             value={range}
             onChange={(e) => setRange(e.target.value)}
           >
@@ -146,8 +146,8 @@ export default function ReportsPage() {
           </select>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">{t("reports.reportFilterLabel")}</label>
+        <div className="w-full md:w-auto">
+          <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.reportFilterLabel")}</label>
           <select
             className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
             value={receiptFilter}

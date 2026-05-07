@@ -27,15 +27,15 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
 
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/40 bg-white/80 backdrop-blur-xl">
-      <div className="flex items-center justify-between gap-4 px-4 py-4 md:px-6">
+      <div className="flex items-center justify-between gap-2 sm:gap-3 md:gap-4 px-3 py-3 sm:px-4 sm:py-4 md:px-6">
         {/* Left: Menu Button + Brand */}
-        <div className="flex items-center gap-4 flex-1">
+        <div className="flex items-center gap-2 sm:gap-3 md:gap-4 flex-1">
           <button
             onClick={onMenuClick}
-            className="p-2 hover:bg-slate-100 rounded-lg transition md:hidden"
+            className="p-1.5 sm:p-2 hover:bg-slate-100 rounded-lg transition md:hidden"
             aria-label={t("nav.menu")}
           >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 sm:w-6 h-5 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
@@ -61,31 +61,31 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
         </div>
 
         {/* Right: Language Toggle + User */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
           {/* Language Toggle Button */}
           <button
             onClick={() => setLanguage(language === "en" ? "amh" : "en")}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition font-medium text-sm text-slate-700"
+            className="inline-flex items-center gap-1 sm:gap-2 px-2 sm:px-3 md:px-4 py-1.5 sm:py-2 rounded-lg bg-slate-100 hover:bg-slate-200 transition font-medium text-xs sm:text-sm text-slate-700"
             title={language === "en" ? t("nav.switchToAmharic") : t("nav.switchToEnglish")}
           >
             <span>{language === "en" ? "🇺🇸" : "🇪🇹"}</span>
-            <span>{language === "en" ? "EN" : "AM"}</span>
+            <span className="hidden xs:inline">{language === "en" ? "EN" : "AM"}</span>
           </button>
 
           {/* User Dropdown */}
           <div className="relative">
             <button
               onClick={() => setShowDropdown(!showDropdown)}
-              className="flex items-center gap-2 pl-3 border-l border-slate-200 hover:opacity-75 transition"
+              className="flex items-center gap-1 sm:gap-2 pl-2 sm:pl-3 border-l border-slate-200 hover:opacity-75 transition"
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-bold">
+              <div className="w-7 sm:w-8 h-7 sm:h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-xs sm:text-sm font-bold">
                 {userInitial}
               </div>
-              <span className="hidden sm:inline text-sm font-medium text-slate-700 max-w-32 truncate">
+              <span className="hidden sm:inline text-xs sm:text-sm font-medium text-slate-700 max-w-24 sm:max-w-32 truncate">
                 {user?.email || t("nav.admin")}
               </span>
               <svg
-                className={`w-4 h-4 text-slate-500 transition ${showDropdown ? "rotate-180" : ""}`}
+                className={`w-4 h-4 text-slate-500 transition hidden sm:block ${showDropdown ? "rotate-180" : ""}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -96,16 +96,16 @@ export default function Navbar({ t, language, setLanguage, onMenuClick }) {
 
             {/* Dropdown Menu */}
             {showDropdown && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50">
-                <div className="px-4 py-2 border-b border-slate-200">
+              <div className="absolute right-0 mt-2 w-40 sm:w-48 bg-white rounded-lg shadow-xl border border-slate-200 py-2 z-50">
+                <div className="px-3 sm:px-4 py-2 border-b border-slate-200">
                   <p className="text-xs text-slate-500 uppercase tracking-widest font-semibold">
                     Signed in as
                   </p>
-                  <p className="text-sm font-medium text-slate-900 truncate">{user?.email}</p>
+                  <p className="text-xs sm:text-sm font-medium text-slate-900 truncate">{user?.email}</p>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-100 transition flex items-center gap-2"
+                  className="w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-slate-700 hover:bg-slate-100 transition flex items-center gap-2"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

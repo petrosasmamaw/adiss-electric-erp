@@ -130,10 +130,10 @@ export default function BalancePage() {
   ];
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 md:space-y-8">
       <SectionHeader subtitle={t("common.finance")} title={t("balance.title")} />
 
-      <div className="grid auto-rows-fr gap-3 md:grid-cols-2 lg:grid-cols-5">
+      <div className="grid auto-rows-fr gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label={t("common.balance")} value={asCurrency(financeSummary.balance)} icon="Balance" color="emerald" size="compact" />
         <div className="cursor-pointer" onClick={() => setShowSupplierCredits((prev) => !prev)}>
           <StatCard label={t("common.credit")} value={asCurrency(financeSummary.credit)} icon="Credit" color="amber" size="compact" />
@@ -154,17 +154,17 @@ export default function BalancePage() {
       </div>
 
       {showSupplierCredits && (
-        <Card variant="elevated" className="p-8">
+        <Card variant="elevated" className="p-6 md:p-8">
           <SectionHeader subtitle={t("balance.suppliers")} title={t("balance.supplierCreditList")} />
 
-          <div className="mt-6 space-y-3">
+          <div className="mt-4 md:mt-6 space-y-2 md:space-y-3">
             {supplierCredits.length === 0 ? (
               <div className="p-8 text-center text-slate-500">{t("balance.noOutstanding")}</div>
             ) : (
               supplierCredits.map((row) => (
                 <div
                   key={row.id}
-                  className="flex flex-col gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-4 transition hover:bg-slate-50 md:flex-row md:items-center"
+                  className="flex flex-col gap-2 md:gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-3 md:p-4 transition hover:bg-slate-50 md:flex-row md:items-center"
                 >
                   <div className="flex-1">
                     <p className="font-bold text-slate-900">{row.supplier_name}</p>
@@ -204,8 +204,8 @@ export default function BalancePage() {
         </Card>
       )}
 
-      <div className="grid gap-8 lg:grid-cols-3">
-        <Card variant="elevated" className="h-fit p-6 lg:col-span-1">
+      <div className="grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-3">
+        <Card variant="elevated" className="h-fit p-4 md:p-6 lg:col-span-1">
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <h3 className="mb-1 text-lg font-bold text-slate-900">{t("balance.addOutEntry")}</h3>

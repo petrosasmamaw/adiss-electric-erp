@@ -123,7 +123,7 @@ export default function SellPage() {
   }
 
   return (
-    <section className="space-y-8">
+    <section className="space-y-6 md:space-y-8">
       {/* Hero */}
       <div>
         <SectionHeader
@@ -133,9 +133,9 @@ export default function SellPage() {
       </div>
 
       {/* Split Layout */}
-      <div className="grid gap-8 lg:grid-cols-2">
+      <div className="grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-2">
         {/* Form */}
-        <Card variant="elevated" className="p-8">
+        <Card variant="elevated" className="p-4 md:p-8">
           <h3 className="text-2xl font-bold text-slate-900 mb-6">{t("sell.title")}</h3>
 
           <form onSubmit={onSubmit} className="space-y-5">

@@ -34,11 +34,11 @@ export default function AppShell({ children }) {
             onMenuClick={() => setSidebarOpen((prev) => !prev)}
           />
 
-          <main className="flex-1 overflow-auto px-4 py-6 md:px-6 md:py-8">
+          <main className="flex-1 overflow-auto px-3 py-4 sm:px-4 sm:py-6 md:px-6 md:py-8">
             <div className="mx-auto max-w-7xl">{children}</div>
           </main>
 
-          <footer className="border-t border-slate-200/40 bg-white/30 px-4 py-4 text-center text-xs text-slate-500 backdrop-blur-sm md:px-6">
+          <footer className="border-t border-slate-200/40 bg-white/30 px-3 py-3 sm:px-4 sm:py-4 md:px-6 text-center text-xs text-slate-500 backdrop-blur-sm">
             <p>{t("nav.footer")}</p>
           </footer>
         </div>

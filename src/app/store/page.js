@@ -116,9 +116,9 @@ export default function StorePage() {
       </div>
 
       {/* Form & List Layout */}
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-6 md:gap-8 grid-cols-1 lg:grid-cols-3">
         {/* Add Product Form */}
-        <Card variant="elevated" className="lg:col-span-1 p-6 h-fit">
+        <Card variant="elevated" className="lg:col-span-1 p-4 md:p-6 h-fit">
           <form onSubmit={onSubmit} className="space-y-4">
             <div>
               <h3 className="text-lg font-bold text-slate-900 mb-1">{t("store.addProduct")}</h3>
@@ -223,7 +223,7 @@ export default function StorePage() {
         {/* Products List */}
         <div className="lg:col-span-2 space-y-4">
           {/* Search & Filters */}
-          <Card variant="elevated" className="p-4 flex flex-col sm:flex-row gap-3">
+          <Card variant="elevated" className="p-3 md:p-4 flex flex-col gap-2 md:gap-3 sm:flex-row sm:items-center">
             <div className="flex-1 relative">
               <input
                 type="text"
@@ -268,15 +268,15 @@ export default function StorePage() {
 
           {/* Product Grid */}
           {loading ? (
-            <Card variant="elevated" className="p-8 text-center">
-              <p className="text-slate-600">{t("store.loadingProducts")}</p>
+            <Card variant="elevated" className="p-6 md:p-8 text-center">
+              <p className="text-slate-600 text-sm md:text-base">{t("store.loadingProducts")}</p>
             </Card>
           ) : filteredProducts.length === 0 ? (
             <Card variant="elevated" className="p-8 text-center">
               <p className="text-slate-600">{t("store.noProducts")}</p>
             </Card>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-2">
               {filteredProducts.map((product) => (
                 <ProductCard
                   key={product.id}
