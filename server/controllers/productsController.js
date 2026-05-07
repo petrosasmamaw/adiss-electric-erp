@@ -190,24 +190,21 @@ async function createProduct(req, res) {
   const stock = Number.isFinite(Number(stockRaw))
     ? Number(stockRaw)
     : isTrackedMode
-      ? uniqueIds.length
+      ? uniqueIds.length  // If no stockRaw provided and tracked mode, use IDs length (0 if empty)
       : 0;
 
   if (!Number.isInteger(stock) || stock < 0) {
-    return res.status(400).json({ error: "stock must be a positive integer" });
-  }
-
-  if (isTrackedMode && uniqueIds.length === 0) {
-    return res.status(400).json({ error: "Tracked mode requires IDs" });
+    return res.status(400).json({ error: "stock must be >= 0" });
   }
 
   if (!isTrackedMode && uniqueIds.length > 0) {
     return res.status(400).json({ error: "Bulk mode cannot include IDs" });
   }
 
-  if (isTrackedMode && stock !== uniqueIds.length) {
+  // Allow tracked mode without IDs initially (virgin product) - stock should be 0
+  if (isTrackedMode && uniqueIds.length > 0 && stock !== uniqueIds.length) {
     return res.status(400).json({
-      error: "For tracked items, stock must equal ids.length",
+      error: "For tracked items with IDs, stock must equal ids.length",
     });
   }
 
@@ -500,6 +497,15 @@ async function buyProduct(req, res) {
 
     const currentIds = normalizeStoredIds(product.ids, parseNumeric(product.default_price, 0));
     const productIsTracked = currentIds.length > 0;
+    
+    // Check if product has any batches (committed to bulk mode)
+    const { rows: batchCountRows } = await client.query(
+      `SELECT COUNT(*) as count FROM product_batches WHERE product_id = $1`,
+      [productId]
+    );
+    const hasBatches = Number(batchCountRows[0]?.count || 0) > 0;
+    const isVirginProduct = !productIsTracked && !hasBatches;
+    
     const requestedMode = String(modeRaw || "").trim().toLowerCase();
     const normalizedMode = requestedMode === "bulk" || requestedMode === "id" || requestedMode === "tracked"
       ? requestedMode
@@ -514,7 +520,8 @@ async function buyProduct(req, res) {
       return res.status(400).json({ error: "This product is tracked by IDs. Use ID mode." });
     }
 
-    if (!productIsTracked && isTrackedMode) {
+    // Allow ID mode only for tracked products or virgin products (not committed to bulk mode)
+    if (!productIsTracked && !isVirginProduct && isTrackedMode) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "This product is bulk. Use bulk mode." });
     }
@@ -551,7 +558,8 @@ async function buyProduct(req, res) {
       return res.status(400).json({ error: "Tracked products must be bought with IDs" });
     }
 
-    if (!productIsTracked && trackedBuyIds.length > 0) {
+    // Only reject IDs for non-virgin bulk products
+    if (!productIsTracked && !isVirginProduct && trackedBuyIds.length > 0) {
       await client.query("ROLLBACK");
       return res.status(400).json({ error: "Bulk products must be bought by quantity" });
     }
@@ -589,6 +597,8 @@ async function buyProduct(req, res) {
       
       // Calculate total purchase amount from individual prices
       const purchaseAmount = uniqueIncoming.reduce((sum, item) => sum + parseNumeric(item.buy_price, 0), 0);
+      // Calculate average price for default_price update
+      const avgBuyPrice = purchaseAmount / uniqueIncoming.length;
 
       await applyBuyFinanceEntry(
         purchaseAmount,
@@ -597,9 +607,10 @@ async function buyProduct(req, res) {
           : `Buy item ${product.name} with balance`
       );
 
+      // Update product stock, ids, and default_price to average buying price for tracked mode
       await client.query(
-        `UPDATE products SET stock = $1, ids = $2::jsonb, updated_at = NOW() WHERE id = $3`,
-        [newStock, JSON.stringify(newIds), productId]
+        `UPDATE products SET stock = $1, ids = $2::jsonb, default_price = $3, updated_at = NOW() WHERE id = $4`,
+        [newStock, JSON.stringify(newIds), avgBuyPrice, productId]
       );
 
       for (let index = 0; index < uniqueIncoming.length; index += 1) {

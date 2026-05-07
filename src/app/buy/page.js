@@ -38,7 +38,10 @@ export default function BuyPage() {
  
   useEffect(() => {
     if (!selectedProduct) return;
-    setMode(productIsTracked ? "id" : "bulk");
+    // Only auto-set mode for tracked products; allow manual selection for virgin/bulk products
+    if (productIsTracked) {
+      setMode("id");
+    }
     setBatchName("");
     setIdsText("");
     setQuantity("1");
@@ -173,8 +176,8 @@ export default function BuyPage() {
                 className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-blue-400"
                 disabled={!selectedProduct}
               >
-                <option value="bulk" disabled={selectedProduct ? productIsTracked : false}>{t("common.bulk")}</option>
-                <option value="id" disabled={selectedProduct ? !productIsTracked : false}>{t("common.byId")}</option>
+                <option value="bulk">{t("common.bulk")}</option>
+                <option value="id">{t("common.byId")}</option>
               </select>
             </div>
 
