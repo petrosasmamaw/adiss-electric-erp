@@ -114,41 +114,45 @@ async function applyFinanceEntry(
     }
   } else if (accountType === "credit") {
     const normalizedSupplier = String(supplierName || "").trim();
+    // creditRole: 'supplier' (default) or 'customer' — controls which credits table to use
+    const creditRole = arguments[1] && arguments[1].creditRole ? arguments[1].creditRole : "supplier";
+    const creditsTable = creditRole === "customer" ? "customer_credits" : "supplier_credits";
 
     if (!normalizedSupplier) {
-      throw new Error("Vendor name is required for credit entries");
+      throw new Error("Name is required for credit entries");
     }
 
     if (direction === "in") {
       await client.query(
         `
-          INSERT INTO supplier_credits (supplier_name, amount, updated_at)
+          INSERT INTO "${creditsTable}" (${creditRole === "customer" ? "customer_name" : "supplier_name"}, amount, updated_at)
           VALUES ($1, $2, NOW())
-          ON CONFLICT (supplier_name)
-          DO UPDATE SET amount = supplier_credits.amount + EXCLUDED.amount, updated_at = NOW()
+          ON CONFLICT (${creditRole === "customer" ? "customer_name" : "supplier_name"})
+          DO UPDATE SET amount = ${creditsTable}.${creditRole === "customer" ? "amount" : "amount"} + EXCLUDED.amount, updated_at = NOW()
         `,
         [normalizedSupplier, amount]
       );
       nextCredit += amount;
     } else {
+      const lookupColumn = creditRole === "customer" ? "customer_name" : "supplier_name";
       const supplierResult = await client.query(
-        `SELECT amount FROM supplier_credits WHERE supplier_name = $1 FOR UPDATE`,
+        `SELECT amount FROM "${creditsTable}" WHERE ${lookupColumn} = $1 FOR UPDATE`,
         [normalizedSupplier]
       );
 
       const currentSupplierCredit = Number(supplierResult.rows[0]?.amount || 0);
 
       if (currentSupplierCredit < amount) {
-        throw new Error("Credit repayment exceeds supplier credit");
+        throw new Error("Credit repayment exceeds stored credit");
       }
 
       const nextSupplierCredit = currentSupplierCredit - amount;
 
       if (nextSupplierCredit === 0) {
-        await client.query(`DELETE FROM supplier_credits WHERE supplier_name = $1`, [normalizedSupplier]);
+        await client.query(`DELETE FROM "${creditsTable}" WHERE ${lookupColumn} = $1`, [normalizedSupplier]);
       } else {
         await client.query(
-          `UPDATE supplier_credits SET amount = $1, updated_at = NOW() WHERE supplier_name = $2`,
+          `UPDATE "${creditsTable}" SET amount = $1, updated_at = NOW() WHERE ${lookupColumn} = $2`,
           [nextSupplierCredit, normalizedSupplier]
         );
       }

@@ -12,7 +12,10 @@ import {
   fetchFinanceReports,
   fetchFinanceSummary,
   fetchSupplierCredits,
+  fetchCustomerCredits,
   paySupplierCredit,
+  payCustomerCredit,
+  receiveCustomerPayment,
 } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
@@ -20,14 +23,23 @@ function asCurrency(value) {
   return `Rs ${Number(value || 0).toFixed(2)}`;
 }
 
+function calculateSupplierCreditSum(credits) {
+  return (credits || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+}
+
+function calculateCustomerCreditSum(credits) {
+  return (credits || []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+}
+
 export default function BalancePage() {
   const dispatch = useDispatch();
-  const { financeSummary, financeReports, supplierCredits, actionLoading } = useSelector((state) => state.erp);
+  const { financeSummary, financeReports, supplierCredits, customerCredits, actionLoading } = useSelector((state) => state.erp);
   const { t } = useLanguage();
 
   const [range, setRange] = useState("all");
   const [accountFilter, setAccountFilter] = useState("");
-  const [showSupplierCredits, setShowSupplierCredits] = useState(false);
+  const [showCredits, setShowCredits] = useState(false);
+  const [creditView, setCreditView] = useState("supplier");
   const [payAmounts, setPayAmounts] = useState({});
   const [form, setForm] = useState({
     account_type: "balance",
@@ -40,6 +52,7 @@ export default function BalancePage() {
   useEffect(() => {
     dispatch(fetchFinanceSummary());
     dispatch(fetchSupplierCredits());
+    dispatch(fetchCustomerCredits());
   }, [dispatch]);
 
   useEffect(() => {
@@ -63,19 +76,29 @@ export default function BalancePage() {
     dispatch(fetchFinanceReports({ range, account: accountFilter }));
   }
 
-  async function onPayCredit(supplierName) {
-    const amount = Number(payAmounts[supplierName] || 0);
+  async function onPayCredit(name) {
+    const amount = Number(payAmounts[name] || 0);
     if (amount <= 0) return;
 
-    await dispatch(
-      paySupplierCredit({
-        supplier_name: supplierName,
-        amount,
-        note: t("balance.payCreditNote", { supplier: supplierName }),
-      })
-    );
+    if (creditView === "supplier") {
+      await dispatch(
+        paySupplierCredit({
+          supplier_name: name,
+          amount,
+          note: t("balance.payCreditNote", { supplier: name }),
+        })
+      );
+    } else {
+      await dispatch(
+        receiveCustomerPayment({
+          supplier_name: name,
+          amount,
+          note: `Amount paid from credit ${name}`,
+        })
+      );
+    }
 
-    setPayAmounts((prev) => ({ ...prev, [supplierName]: "" }));
+    setPayAmounts((prev) => ({ ...prev, [name]: "" }));
     dispatch(fetchFinanceReports({ range, account: accountFilter }));
   }
 
@@ -135,8 +158,21 @@ export default function BalancePage() {
 
       <div className="grid auto-rows-fr gap-2 md:gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
         <StatCard label={t("common.balance")} value={asCurrency(financeSummary.balance)} icon="Balance" color="emerald" size="compact" />
-        <div className="cursor-pointer" onClick={() => setShowSupplierCredits((prev) => !prev)}>
-          <StatCard label={t("common.credit")} value={asCurrency(financeSummary.credit)} icon="Credit" color="amber" size="compact" />
+        <div className="cursor-pointer rounded-xl border border-slate-200 bg-gradient-to-br from-amber-50 to-amber-100/50 p-4" onClick={() => { setShowCredits((prev) => !prev); setCreditView("supplier"); }}>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-amber-700">Supplier</span>
+              <span className="text-sm font-bold text-amber-900">{asCurrency(calculateSupplierCreditSum(supplierCredits))}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-amber-700">Customer</span>
+              <span className="text-sm font-bold text-amber-900">{asCurrency(calculateCustomerCreditSum(customerCredits))}</span>
+            </div>
+            <div className="border-t border-amber-200 pt-2 flex items-center justify-between">
+              <span className="text-xs font-semibold text-amber-800">Net Credit</span>
+              <span className="text-sm font-bold text-amber-950">{asCurrency(calculateCustomerCreditSum(customerCredits) - calculateSupplierCreditSum(supplierCredits))}</span>
+            </div>
+          </div>
         </div>
         <StatCard label={t("dashboard.profit")} value={asCurrency(financeSummary.profit)} icon="Profit" color="purple" size="compact" />
         <StatCard label={t("balance.stockValue")} value={asCurrency(financeSummary.stockValue)} icon="Stock" color="blue" size="compact" />
@@ -153,15 +189,33 @@ export default function BalancePage() {
         />
       </div>
 
-      {showSupplierCredits && (
+      {showCredits && (
         <Card variant="elevated" className="p-6 md:p-8">
-          <SectionHeader subtitle={t("balance.suppliers")} title={t("balance.supplierCreditList")} />
+          <div className="flex items-center justify-between">
+            <SectionHeader subtitle={t("balance.suppliers")} title={t("balance.supplierCreditList")} />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className={`px-3 py-1 rounded-xl ${creditView === "supplier" ? "bg-amber-500 text-white" : "bg-white border"}`}
+                onClick={() => setCreditView("supplier")}
+              >
+                {t("balance.suppliersShort")}
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1 rounded-xl ${creditView === "customer" ? "bg-amber-500 text-white" : "bg-white border"}`}
+                onClick={() => setCreditView("customer")}
+              >
+                {t("balance.customersShort")}
+              </button>
+            </div>
+          </div>
 
           <div className="mt-4 md:mt-6 space-y-2 md:space-y-3">
-            {supplierCredits.length === 0 ? (
+            {((creditView === "supplier" ? supplierCredits : customerCredits) || []).length === 0 ? (
               <div className="p-8 text-center text-slate-500">{t("balance.noOutstanding")}</div>
             ) : (
-              supplierCredits.map((row) => (
+              (creditView === "supplier" ? supplierCredits : customerCredits).map((row) => (
                 <div
                   key={row.id}
                   className="flex flex-col gap-2 md:gap-4 rounded-xl border border-slate-200 bg-slate-50/50 p-3 md:p-4 transition hover:bg-slate-50 md:flex-row md:items-center"
@@ -194,7 +248,7 @@ export default function BalancePage() {
                       onClick={() => onPayCredit(row.supplier_name)}
                       disabled={actionLoading}
                     >
-                      {actionLoading ? "..." : t("balance.payCredit")}
+                      {actionLoading ? "..." : creditView === "supplier" ? t("balance.payCredit") : t("balance.receivePayment")}
                     </button>
                   </div>
                 </div>

@@ -728,6 +728,8 @@ async function sellProduct(req, res) {
     item_ids: itemIdsRaw,
     price: priceRaw,
     has_receipt: hasReceiptRaw,
+    payment_source: paymentSourceRaw,
+    supplier_name: supplierNameRaw,
   } = req.body || {};
 
   if (!Number.isInteger(productId)) {
@@ -763,6 +765,9 @@ async function sellProduct(req, res) {
 
     const unitPrice = parseNumeric(priceRaw, parseNumeric(product.default_price, 0));
     const hasReceipt = parseBoolean(hasReceiptRaw, true);
+    const paymentSourceInput = String(paymentSourceRaw || "bank").trim().toLowerCase();
+    const paymentSource = paymentSourceInput === "balance" ? "bank" : paymentSourceInput;
+    const supplierName = String(supplierNameRaw || "").trim();
     const currentValues = currentIds.map(getIdValue);
     const singleInput = itemIdRaw ? String(itemIdRaw).trim() : "";
     const fromSingle = singleInput
@@ -807,12 +812,21 @@ async function sellProduct(req, res) {
         [newStock, JSON.stringify(nextIds), productId]
       );
 
+      // finance entry: bank increases balance, credit increases credit (customer owes money)
+      const financeAccountType = paymentSource === "credit" ? "credit" : "balance";
+      const financeDirection = "in";
+
+      if (financeAccountType === "credit" && !supplierName) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ error: "supplier_name (customer name) is required for credit sales" });
+      }
+
       await applyFinanceEntry(client, {
-        accountType: "balance",
-        direction: "in",
+        accountType: financeAccountType,
+        direction: financeDirection,
         amount: saleAmount,
         note: `Sell item ${product.name}`,
-        source: "sell",
+        source: paymentSource === "credit" ? "sell-credit" : "sell",
         referenceType: "product",
         referenceId: productId,
         hasReceipt,
@@ -820,6 +834,8 @@ async function sellProduct(req, res) {
           const matchedItem = currentIds.find((item) => getIdValue(item) === soldId);
           return hasReceipt && !parseBoolean(matchedItem?.has_receipt, true);
         }),
+        supplierName: paymentSource === "credit" ? supplierName : null,
+        creditRole: paymentSource === "credit" ? "customer" : undefined,
       });
 
       for (let index = 0; index < uniqueRequested.length; index += 1) {
@@ -916,16 +932,26 @@ async function sellProduct(req, res) {
       [newRemaining, selectedBatch.id]
     );
 
+    const financeAccountType2 = paymentSource === "credit" ? "credit" : "balance";
+    const financeDirection2 = "in";
+
+    if (financeAccountType2 === "credit" && !supplierName) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: "supplier_name (customer name) is required for credit sales" });
+    }
+
     await applyFinanceEntry(client, {
-      accountType: "balance",
-      direction: "in",
+      accountType: financeAccountType2,
+      direction: financeDirection2,
       amount: saleAmount,
       note: `Sell item ${product.name}`,
-      source: "sell",
+      source: paymentSource === "credit" ? "sell-credit" : "sell",
       referenceType: "product",
       referenceId: productId,
       hasReceipt,
       receiptMismatch,
+      supplierName: paymentSource === "credit" ? supplierName : null,
+      creditRole: paymentSource === "credit" ? "customer" : undefined,
     });
 
     await logItemReport(client, {

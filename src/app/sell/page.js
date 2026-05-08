@@ -20,6 +20,8 @@ export default function SellPage() {
   const [selectedBatchId, setSelectedBatchId] = useState("");
   const [price, setPrice] = useState("");
   const [hasReceipt, setHasReceipt] = useState(true);
+  const [paymentSource, setPaymentSource] = useState("bank");
+  const [customerName, setCustomerName] = useState("");
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -95,8 +97,8 @@ export default function SellPage() {
       .filter(Boolean);
 
       const payload = idList.length
-        ? { item_ids: idList, price: sellPrice, has_receipt: hasReceipt }
-        : { quantity: Number(quantity), price: sellPrice, has_receipt: hasReceipt };
+        ? { item_ids: idList, price: sellPrice, has_receipt: hasReceipt, payment_source: paymentSource, supplier_name: paymentSource === "credit" ? customerName.trim() : undefined }
+        : { quantity: Number(quantity), price: sellPrice, has_receipt: hasReceipt, payment_source: paymentSource, supplier_name: paymentSource === "credit" ? customerName.trim() : undefined };
 
       await dispatch(sellProduct({ productId: selectedId, payload }));
       setQuantity("1");
@@ -116,6 +118,9 @@ export default function SellPage() {
       price: sellPrice,
       has_receipt: hasReceipt,
     };
+
+    payload.payment_source = paymentSource;
+    if (paymentSource === "credit") payload.supplier_name = customerName.trim();
 
     await dispatch(sellProduct({ productId: selectedId, payload }));
     setQuantity("1");
@@ -215,6 +220,27 @@ export default function SellPage() {
               {t("sell.saleHasReceipt")}
             </label>
 
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">{t("sell.paymentSource")}</label>
+              <select
+                value={paymentSource}
+                onChange={(e) => setPaymentSource(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white/50 px-4 py-2.5 font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 focus:ring-rose-400"
+              >
+                <option value="bank">{t("sell.bank")}</option>
+                <option value="credit">{t("sell.credit")}</option>
+              </select>
+            </div>
+
+            {paymentSource === "credit" && (
+              <InputField
+                label={t("sell.customerName")}
+                placeholder={t("sell.customerNamePlaceholder")}
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+              />
+            )}
+
             {/* Submit Button */}
             <button
               disabled={actionLoading || !selectedId || (!isTrackedProduct && !selectedBatchId)}
@@ -302,6 +328,16 @@ export default function SellPage() {
                       <span>{t("common.mode")}:</span>
                       <span className="font-medium text-slate-900">{isTrackedProduct ? t("common.tracked") : t("common.bulk")}</span>
                     </div>
+                    <div className="flex justify-between text-slate-600">
+                      <span>{t("buy.paymentSource")}:</span>
+                      <span className="capitalize font-medium text-slate-900">{paymentSource === "credit" ? t("buy.credit") : t("buy.bank")}</span>
+                    </div>
+                    {paymentSource === "credit" && (
+                      <div className="flex justify-between text-slate-600">
+                        <span>{t("balance.customer")}:</span>
+                        <span className="font-medium text-slate-900">{customerName || "-"}</span>
+                      </div>
+                    )}
                     {!isTrackedProduct && selectedBatch && (
                       <div className="flex justify-between text-slate-600">
                         <span>{t("common.batch")}:</span>

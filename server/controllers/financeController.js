@@ -193,6 +193,25 @@ async function getSupplierCredits(_req, res) {
   }
 }
 
+async function getCustomerCredits(_req, res) {
+  try {
+    const { rows } = await getPool().query(
+      `
+        SELECT id, customer_name, amount, updated_at
+        FROM customer_credits
+        WHERE amount > 0
+        ORDER BY amount DESC, customer_name ASC
+      `
+    );
+
+    // normalize property name to supplier_name for frontend compatibility
+    const normalized = rows.map((r) => ({ id: r.id, supplier_name: r.customer_name, amount: r.amount, updated_at: r.updated_at }));
+    res.json(normalized);
+  } catch (_error) {
+    res.status(500).json({ error: "Failed to load customer credits" });
+  }
+}
+
 async function paySupplierCredit(req, res) {
   const {
     supplier_name: supplierNameRaw,
@@ -232,6 +251,8 @@ async function paySupplierCredit(req, res) {
       direction: "out",
       amount,
       supplierName,
+      // indicate this is a supplier (vendor) credit repayment
+      creditRole: "supplier",
       note: note ? String(note).trim() : `Amount paid for credit ${supplierName}`,
       source: "credit-payment",
       referenceType: "supplier",
@@ -254,4 +275,119 @@ module.exports = {
   getFinanceSummary,
   getSupplierCredits,
   paySupplierCredit,
+  getCustomerCredits,
+  payCustomerCredit: async function payCustomerCredit(req, res) {
+    const {
+      supplier_name: supplierNameRaw,
+      amount: amountRaw,
+      note,
+    } = req.body || {};
+
+    const supplierName = String(supplierNameRaw || "").trim();
+    const amount = parseNumeric(amountRaw, -1);
+
+    if (!supplierName) {
+      return res.status(400).json({ error: "supplier_name is required" });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ error: "amount must be > 0" });
+    }
+
+    const client = await getPool().connect();
+
+    try {
+      await client.query("BEGIN");
+
+      await applyFinanceEntry(client, {
+        accountType: "balance",
+        direction: "out",
+        amount,
+        note: note ? String(note).trim() : `Amount paid for credit ${supplierName}`,
+        source: "credit-payment",
+        referenceType: "customer",
+        referenceId: null,
+        supplierName: null,
+      });
+
+      const summary = await applyFinanceEntry(client, {
+        accountType: "credit",
+        direction: "out",
+        amount,
+        supplierName,
+        // indicate this is a customer credit repayment
+        creditRole: "customer",
+        note: note ? String(note).trim() : `Amount paid for credit ${supplierName}`,
+        source: "credit-payment",
+        referenceType: "customer",
+        referenceId: null,
+      });
+
+      await client.query("COMMIT");
+      return res.status(201).json({ ok: true, ...summary });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: error.message || "Failed to pay customer credit" });
+    } finally {
+      client.release();
+    }
+  },
+  // receiveCustomerPayment: when a customer pays their outstanding credit (balance increases, customer credit decreases)
+  receiveCustomerPayment: async function receiveCustomerPayment(req, res) {
+    const {
+      supplier_name: supplierNameRaw,
+      amount: amountRaw,
+      note,
+    } = req.body || {};
+
+    const supplierName = String(supplierNameRaw || "").trim();
+    const amount = parseNumeric(amountRaw, -1);
+
+    if (!supplierName) {
+      return res.status(400).json({ error: "supplier_name is required" });
+    }
+
+    if (amount <= 0) {
+      return res.status(400).json({ error: "amount must be > 0" });
+    }
+
+    const client = await getPool().connect();
+
+    try {
+      await client.query("BEGIN");
+
+      // 1) increase balance
+      await applyFinanceEntry(client, {
+        accountType: "balance",
+        direction: "in",
+        amount,
+        note: note ? String(note).trim() : `Customer ${supplierName} paid Rs ${amount.toFixed(2)} credit`,
+        source: "credit-receipt",
+        referenceType: "customer",
+        referenceId: null,
+        supplierName: null,
+      });
+
+      // 2) decrease customer credit
+      const summary = await applyFinanceEntry(client, {
+        accountType: "credit",
+        direction: "out",
+        amount,
+        supplierName,
+        creditRole: "customer",
+        note: note ? String(note).trim() : `Customer ${supplierName} paid Rs ${amount.toFixed(2)} credit`,
+        source: "credit-receipt",
+        referenceType: "customer",
+        referenceId: null,
+      });
+
+      await client.query("COMMIT");
+      return res.status(201).json({ ok: true, ...summary });
+    } catch (error) {
+      await client.query("ROLLBACK");
+      return res.status(400).json({ error: error.message || "Failed to record customer payment" });
+    } finally {
+      client.release();
+    }
+  },
 };

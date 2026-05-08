@@ -101,6 +101,10 @@ export const fetchSupplierCredits = createAsyncThunk("erp/fetchSupplierCredits",
   return apiRequest("/finance/vendor-credits");
 });
 
+export const fetchCustomerCredits = createAsyncThunk("erp/fetchCustomerCredits", async () => {
+  return apiRequest("/finance/customer-credits");
+});
+
 export const paySupplierCredit = createAsyncThunk(
   "erp/paySupplierCredit",
   async (payload, { dispatch }) => {
@@ -112,6 +116,37 @@ export const paySupplierCredit = createAsyncThunk(
     await dispatch(fetchFinanceSummary());
     await dispatch(fetchFinanceReports());
     await dispatch(fetchSupplierCredits());
+    await dispatch(fetchCustomerCredits());
+    return true;
+  }
+);
+
+export const payCustomerCredit = createAsyncThunk(
+  "erp/payCustomerCredit",
+  async (payload, { dispatch }) => {
+    await apiRequest("/finance/pay-customer-credit", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    await dispatch(fetchFinanceSummary());
+    await dispatch(fetchFinanceReports());
+    await dispatch(fetchCustomerCredits());
+    return true;
+  }
+);
+
+export const receiveCustomerPayment = createAsyncThunk(
+  "erp/receiveCustomerPayment",
+  async (payload, { dispatch }) => {
+    await apiRequest("/finance/receive-customer-credit", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    await dispatch(fetchFinanceSummary());
+    await dispatch(fetchFinanceReports());
+    await dispatch(fetchCustomerCredits());
     return true;
   }
 );
@@ -138,6 +173,7 @@ const initialState = {
   transactions: [],
   financeReports: [],
   supplierCredits: [],
+  customerCredits: [],
   financeSummary: {
     balance: 0,
     credit: 0,
@@ -219,6 +255,12 @@ const erpSlice = createSlice({
       .addCase(fetchSupplierCredits.rejected, (state, action) => {
         state.error = action.error.message || "Failed to load vendor credits";
       })
+      .addCase(fetchCustomerCredits.fulfilled, (state, action) => {
+        state.customerCredits = action.payload;
+      })
+      .addCase(fetchCustomerCredits.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to load customer credits";
+      })
       .addMatcher(
         (action) =>
           action.type === createProduct.pending.type ||
@@ -226,7 +268,9 @@ const erpSlice = createSlice({
           action.type === buyProduct.pending.type ||
           action.type === sellProduct.pending.type ||
           action.type === createFinanceEntry.pending.type ||
-          action.type === paySupplierCredit.pending.type,
+          action.type === paySupplierCredit.pending.type ||
+          action.type === payCustomerCredit.pending.type ||
+          action.type === receiveCustomerPayment.pending.type,
         (state) => {
           state.actionLoading = true;
           state.error = null;
@@ -239,7 +283,9 @@ const erpSlice = createSlice({
           action.type === buyProduct.fulfilled.type ||
           action.type === sellProduct.fulfilled.type ||
           action.type === createFinanceEntry.fulfilled.type ||
-          action.type === paySupplierCredit.fulfilled.type,
+          action.type === paySupplierCredit.fulfilled.type ||
+          action.type === payCustomerCredit.fulfilled.type ||
+          action.type === receiveCustomerPayment.fulfilled.type,
         (state) => {
           state.actionLoading = false;
         }
@@ -251,7 +297,9 @@ const erpSlice = createSlice({
           action.type === buyProduct.rejected.type ||
           action.type === sellProduct.rejected.type ||
           action.type === createFinanceEntry.rejected.type ||
-          action.type === paySupplierCredit.rejected.type,
+          action.type === paySupplierCredit.rejected.type ||
+          action.type === payCustomerCredit.rejected.type ||
+          action.type === receiveCustomerPayment.rejected.type,
         (state, action) => {
           state.actionLoading = false;
           state.error = action.error.message || "Action failed";

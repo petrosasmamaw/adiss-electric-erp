@@ -240,6 +240,16 @@ async function initSchema() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS customer_credits (
+      id SERIAL PRIMARY KEY,
+      customer_name TEXT NOT NULL UNIQUE,
+      amount NUMERIC(14, 2) NOT NULL DEFAULT 0 CHECK (amount >= 0),
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_item_reports_product_id ON item_reports(product_id);
   `);
 
@@ -277,6 +287,10 @@ async function initSchema() {
 
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_supplier_credits_supplier_name ON supplier_credits(supplier_name);
+  `);
+
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_customer_credits_customer_name ON customer_credits(customer_name);
   `);
 
   // Create users table for authentication
