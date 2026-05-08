@@ -102,6 +102,20 @@ export default function ReportsPage() {
       label: t("reports.sellPrice"),
       render: (row) => row.sell_price == null ? "—" : `Rs ${Number(row.sell_price || 0).toFixed(2)}`,
     },
+    {
+      key: "profit",
+      label: t("reports.profit"),
+      render: (row) => {
+        const hasSellPrice = row.sell_price !== null && row.sell_price !== undefined && row.sell_price !== "";
+        if (!hasSellPrice) return "--";
+
+        const sellPrice = Number(row.sell_price);
+        const buyPrice = Number(row.buy_price || 0);
+        if (Number.isNaN(sellPrice) || Number.isNaN(buyPrice)) return "--";
+
+        return `Rs ${(sellPrice - buyPrice).toFixed(2)}`;
+      },
+    },
   ];
 
   return (
