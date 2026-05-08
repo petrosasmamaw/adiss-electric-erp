@@ -17,6 +17,8 @@ export default function StorePage() {
 
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
+  const [categoryQuery, setCategoryQuery] = useState("");
+  const [showCategoryList, setShowCategoryList] = useState(false);
   const [form, setForm] = useState({
     name: "",
     category: "",
@@ -44,6 +46,12 @@ export default function StorePage() {
     const cats = [...new Set(products.map((p) => p.category))];
     return cats.filter(Boolean);
   }, [products]);
+
+  const filteredCategories = useMemo(() => {
+    const q = String(categoryQuery || "").trim().toLowerCase();
+    if (!q) return categories;
+    return categories.filter((c) => String(c || "").toLowerCase().includes(q));
+  }, [categories, categoryQuery]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((item) => {
@@ -171,13 +179,73 @@ export default function StorePage() {
               required
             />
 
-            <InputField
-              label={t("store.category")}
-              placeholder={t("store.categoryPlaceholder")}
-              value={form.category}
-              onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-              required
-            />
+            <div className="relative">
+              <InputField
+                label={t("store.category")}
+                placeholder={t("store.categoryPlaceholder")}
+                value={form.category}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setForm((prev) => ({ ...prev, category: v }));
+                  setCategoryQuery(v);
+                  setShowCategoryList(true);
+                }}
+                onFocus={() => {
+                  setCategoryQuery(form.category || "");
+                  setShowCategoryList(true);
+                }}
+                required
+              />
+
+              {showCategoryList && (
+                <div className="absolute z-50 mt-1 w-full rounded-xl bg-white border border-slate-200 shadow-lg overflow-hidden max-h-44 overflow-y-auto">
+                  {filteredCategories.length === 0 && String(categoryQuery || "").trim() ? (
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-slate-100"
+                      onClick={() => {
+                        const v = String(categoryQuery || "").trim();
+                        setForm((prev) => ({ ...prev, category: v }));
+                        setShowCategoryList(false);
+                      }}
+                    >
+                      Add "{categoryQuery}"
+                    </button>
+                  ) : (
+                    <>
+                      {filteredCategories.map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-slate-50"
+                          onClick={() => {
+                            setForm((prev) => ({ ...prev, category: cat }));
+                            setCategoryQuery(cat);
+                            setShowCategoryList(false);
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+
+                      {String(categoryQuery || "").trim() && !filteredCategories.map(String).includes(String(categoryQuery)) && (
+                        <button
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-slate-100"
+                          onClick={() => {
+                            const v = String(categoryQuery || "").trim();
+                            setForm((prev) => ({ ...prev, category: v }));
+                            setShowCategoryList(false);
+                          }}
+                        >
+                          Add "{categoryQuery}"
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
 
             <div>
               <label className="mb-2 block text-sm font-medium text-slate-700">{t("common.mode")}</label>
