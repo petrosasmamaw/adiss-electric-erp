@@ -439,6 +439,48 @@ async function deleteProduct(req, res) {
   }
 }
 
+async function updateProduct(req, res) {
+  const productId = Number(req.params.id);
+  const { name: nameRaw, category: categoryRaw, default_price: defaultPriceRaw } = req.body || {};
+
+  if (!Number.isInteger(productId)) {
+    return res.status(400).json({ error: "Invalid product id" });
+  }
+
+  const name = String(nameRaw || "").trim();
+  const category = String(categoryRaw || "").trim();
+  const defaultPrice = parseNumeric(defaultPriceRaw, -1);
+
+  if (!name || !category) {
+    return res.status(400).json({ error: "name and category are required" });
+  }
+
+  if (defaultPrice < 0) {
+    return res.status(400).json({ error: "default_price must be >= 0" });
+  }
+
+  try {
+    const { rows } = await getPool().query(
+      `
+        UPDATE products
+        SET name = $1, category = $2, default_price = $3, updated_at = NOW()
+        WHERE id = $4 AND available = TRUE
+        RETURNING id, name, category, stock, default_price, ids, available
+      `,
+      [name, category, defaultPrice, productId]
+    );
+
+    if (!rows.length) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+
+    return res.json(rows[0]);
+  } catch (error) {
+    console.error("updateProduct failed", error);
+    return res.status(500).json({ error: "Failed to update product" });
+  }
+}
+
 async function buyProduct(req, res) {
   const productId = Number(req.params.id);
   const {
@@ -988,4 +1030,5 @@ module.exports = {
   deleteProduct,
   getProducts,
   sellProduct,
+  updateProduct,
 };

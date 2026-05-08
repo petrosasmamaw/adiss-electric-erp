@@ -6,7 +6,7 @@ import ProductCard from "@/components/ProductCard";
 import Card from "@/components/Card";
 import SectionHeader from "@/components/SectionHeader";
 import InputField from "@/components/InputField";
-import { clearError, createProduct, deleteProduct, fetchProducts } from "@/lib/features/erpSlice";
+import { clearError, createProduct, deleteProduct, fetchProducts, updateProduct } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
 
@@ -26,6 +26,12 @@ export default function StorePage() {
     default_price: "",
     idsText: "",
     has_receipt: true,
+  });
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    category: "",
+    default_price: "",
   });
 
   const isTrackedMode = form.mode === "id";
@@ -103,6 +109,38 @@ export default function StorePage() {
       const msg = err?.message || String(err || "Failed to delete");
       window.alert(t("store.deleteFailed") + ": " + msg);
     }
+  }
+
+  function openEditModal(product) {
+    setEditingProduct(product);
+    setEditForm({
+      name: String(product?.name || ""),
+      category: String(product?.category || ""),
+      default_price: String(product?.default_price ?? ""),
+    });
+  }
+
+  function closeEditModal() {
+    setEditingProduct(null);
+    setEditForm({ name: "", category: "", default_price: "" });
+  }
+
+  async function handleUpdateProduct(event) {
+    event.preventDefault();
+    if (!editingProduct?.id) return;
+
+    await dispatch(
+      updateProduct({
+        productId: editingProduct.id,
+        payload: {
+          name: editForm.name.trim(),
+          category: editForm.category.trim(),
+          default_price: Number(editForm.default_price || 0),
+        },
+      })
+    ).unwrap();
+
+    closeEditModal();
   }
 
   return (
@@ -281,6 +319,7 @@ export default function StorePage() {
                 <ProductCard
                   key={product.id}
                   product={product}
+                  onEdit={openEditModal}
                   onDelete={handleDelete}
                   deleting={actionLoading}
                 />
@@ -289,6 +328,60 @@ export default function StorePage() {
           )}
         </div>
       </div>
+
+      {editingProduct && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
+          <Card variant="elevated" className="w-full max-w-lg p-6">
+            <form onSubmit={handleUpdateProduct} className="space-y-4">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900">Edit Product</h3>
+                <p className="text-sm text-slate-600">Update name, category, and default price.</p>
+              </div>
+
+              <InputField
+                label={t("store.productName")}
+                value={editForm.name}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, name: e.target.value }))}
+                required
+              />
+
+              <InputField
+                label={t("store.category")}
+                value={editForm.category}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, category: e.target.value }))}
+                required
+              />
+
+              <InputField
+                label={t("store.defaultPrice")}
+                type="text"
+                inputMode="decimal"
+                min="0"
+                value={editForm.default_price}
+                onChange={(e) => setEditForm((prev) => ({ ...prev, default_price: e.target.value }))}
+                required
+              />
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={closeEditModal}
+                  className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  {t("common.close")}
+                </button>
+                <button
+                  type="submit"
+                  disabled={actionLoading}
+                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {actionLoading ? t("store.saving") : "Update"}
+                </button>
+              </div>
+            </form>
+          </Card>
+        </div>
+      )}
     </section>
   );
 }

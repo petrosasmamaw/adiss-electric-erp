@@ -27,7 +27,7 @@ function CategoryPill({ category }) {
 
 // avatar removed — layout is data-first, no decorative avatar
 
-export default function ProductCard({ product, onDelete, deleting = false }) {
+export default function ProductCard({ product, onDelete, onEdit, deleting = false }) {
   const tracked = Array.isArray(product.ids) && product.ids.length > 0;
   const batches = Array.isArray(product.batches) ? product.batches : [];
   const { t } = useLanguage();
@@ -87,7 +87,15 @@ export default function ProductCard({ product, onDelete, deleting = false }) {
 
       {/* Footer: divider + actions */}
       <div className="mt-4 border-t border-slate-100 pt-3 flex items-center justify-end">
-        <div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onEdit?.(product)}
+            disabled={deleting}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-sm text-blue-600 hover:bg-blue-50 disabled:opacity-60"
+          >
+            <span>Edit</span>
+          </button>
           <button
             type="button"
             onClick={() => onDelete?.(product)}

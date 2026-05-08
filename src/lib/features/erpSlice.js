@@ -29,6 +29,16 @@ export const deleteProduct = createAsyncThunk("erp/deleteProduct", async (produc
   return true;
 });
 
+export const updateProduct = createAsyncThunk("erp/updateProduct", async ({ productId, payload }, { dispatch }) => {
+  await apiRequest(`/products/${productId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  await dispatch(fetchProducts());
+  return true;
+});
+
 export const buyProduct = createAsyncThunk("erp/buyProduct", async ({ productId, payload }, { dispatch }) => {
   await apiRequest(`/products/${productId}/buy`, {
     method: "POST",
@@ -264,6 +274,7 @@ const erpSlice = createSlice({
       .addMatcher(
         (action) =>
           action.type === createProduct.pending.type ||
+          action.type === updateProduct.pending.type ||
           action.type === deleteProduct.pending.type ||
           action.type === buyProduct.pending.type ||
           action.type === sellProduct.pending.type ||
@@ -279,6 +290,7 @@ const erpSlice = createSlice({
       .addMatcher(
         (action) =>
           action.type === createProduct.fulfilled.type ||
+          action.type === updateProduct.fulfilled.type ||
           action.type === deleteProduct.fulfilled.type ||
           action.type === buyProduct.fulfilled.type ||
           action.type === sellProduct.fulfilled.type ||
@@ -293,6 +305,7 @@ const erpSlice = createSlice({
       .addMatcher(
         (action) =>
           action.type === createProduct.rejected.type ||
+          action.type === updateProduct.rejected.type ||
           action.type === deleteProduct.rejected.type ||
           action.type === buyProduct.rejected.type ||
           action.type === sellProduct.rejected.type ||
