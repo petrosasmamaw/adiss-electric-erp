@@ -82,32 +82,18 @@ export function buildAnalytics({ dashboard = {}, reports = [], products = [], fi
     { sales: 0, cost: 0, opening: 0 }
   );
 
-  const salesTotal = toNumber(dashboard.totalSales) || totalsFromTrends.sales || 15552.0;
-  const costTotal = toNumber(dashboard.totalCost ?? dashboard.totalPurchases) || totalsFromTrends.cost || 32349.93;
+  const salesTotal = toNumber(dashboard.totalSales) || totalsFromTrends.sales || 0;
+  const costTotal = toNumber(dashboard.totalCost ?? dashboard.totalPurchases) || totalsFromTrends.cost || 0;
   const openingStockValue = totalsFromTrends.opening;
   const profit = salesTotal - costTotal;
   const profitMargin = salesTotal > 0 ? (profit / salesTotal) * 100 : 0;
 
   if (trendData.length === 0) {
-    trendData = [
-      { date: "2026-04-28", totalSales: 2200, totalCost: 3400, profit: -1200 },
-      { date: "2026-04-29", totalSales: 2900, totalCost: 4100, profit: -1200 },
-      { date: "2026-04-30", totalSales: 2500, totalCost: 3800, profit: -1300 },
-      { date: "2026-05-01", totalSales: 3100, totalCost: 4300, profit: -1200 },
-      { date: "2026-05-02", totalSales: 2700, totalCost: 3900, profit: -1200 },
-      { date: "2026-05-03", totalSales: salesTotal, totalCost: costTotal, profit },
-    ];
+    trendData = [];
   }
 
   if (stockMovementData.length === 0) {
-    stockMovementData = [
-      { date: "2026-04-28", stockIn: 8, stockOut: 3 },
-      { date: "2026-04-29", stockIn: 10, stockOut: 4 },
-      { date: "2026-04-30", stockIn: 6, stockOut: 3 },
-      { date: "2026-05-01", stockIn: 9, stockOut: 5 },
-      { date: "2026-05-02", stockIn: 5, stockOut: 2 },
-      { date: "2026-05-03", stockIn: 7, stockOut: 4 },
-    ];
+    stockMovementData = [];
   }
 
   const distributionData = [
@@ -126,18 +112,12 @@ export function buildAnalytics({ dashboard = {}, reports = [], products = [], fi
     .slice(0, 10);
 
   if (inventoryData.length === 0) {
-    inventoryData = [
-      { name: "Cable", stockValue: 7200, stock: 8 },
-      { name: "Switch", stockValue: 5600, stock: 6 },
-      { name: "Socket", stockValue: 4900, stock: 5 },
-      { name: "Breaker", stockValue: 4300, stock: 4 },
-      { name: "Panel", stockValue: 3749.46, stock: 5 },
-    ];
+    inventoryData = [];
   }
 
-  const balance = toNumber(financeSummary.balance) || 102802.12;
+  const balance = toNumber(financeSummary.balance) || 0;
   const credit = toNumber(financeSummary.credit) || 0;
-  const stockValue = toNumber(financeSummary.stockValue) || 25749.46;
+  const stockValue = toNumber(financeSummary.stockValue) || 0;
   const net = balance + stockValue - credit;
 
   const financialPositionData = [
