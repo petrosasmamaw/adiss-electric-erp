@@ -11,7 +11,14 @@ const {
 } = require("../utils/authUtils");
 
 const isProduction = process.env.NODE_ENV === "production";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+// Support comma-separated FRONTEND_URL values.
+// In development prefer a localhost entry if present, otherwise use the first entry.
+const _frontendUrls = (process.env.FRONTEND_URL || "http://localhost:3000").split(",").map(s => s.trim());
+let FRONTEND_URL = _frontendUrls[0];
+if (!isProduction) {
+  const localhostEntry = _frontendUrls.find(u => u.includes("localhost") || u.includes("127.0.0.1"));
+  if (localhostEntry) FRONTEND_URL = localhostEntry;
+}
 
 async function login(req, res) {
   try {
@@ -104,6 +111,8 @@ async function forgotPassword(req, res) {
   try {
     const { email } = req.body;
 
+    console.log(`forgotPassword called for: ${email}`);
+
     if (!email) {
       return res.status(400).json({ error: "Email is required" });
     }
@@ -120,6 +129,8 @@ async function forgotPassword(req, res) {
     const hashedToken = hashResetToken(resetToken);
     const expiresAt = new Date(Date.now() + 3600 * 1000); // 1 hour
 
+    console.log(`Creating reset token for user id=${user.id}, expiresAt=${expiresAt.toISOString()}`);
+
     await pool.query(
       "UPDATE users SET reset_password_token = $1, reset_password_expires = $2 WHERE id = $3",
       [hashedToken, expiresAt, user.id]
@@ -131,9 +142,12 @@ async function forgotPassword(req, res) {
       const resend = new Resend(process.env.RESEND_API_KEY);
 
       const resetLink = `${FRONTEND_URL}/reset-password/${resetToken}`;
+      console.log(`Reset link: ${resetLink}`);
+      const resendFrom = process.env.RESEND_FROM || process.env.EMAIL_FROM || process.env.EMAIL_USER || "onboarding@resend.dev";
 
-      await resend.emails.send({
-        from: "onboarding@resend.dev",
+      // send via Resend and log full response for troubleshooting
+      const resendResult = await resend.emails.send({
+        from: resendFrom,
         to: email,
         subject: "Reset Your Password",
         html: `
@@ -146,9 +160,58 @@ async function forgotPassword(req, res) {
           <p>If you didn't request this, please ignore this email.</p>
         `,
       });
+
+      console.log(`Resend response:`, resendResult);
+
+      if (resendResult && resendResult.error) {
+        console.error(`Resend reported error: ${resendResult.error.message}`);
+        // Throw to trigger SMTP fallback below
+        throw new Error(resendResult.error.message);
+      }
+
+      console.log(`Reset email sent via Resend (from ${resendFrom}) to ${email}`);
     } catch (emailError) {
-      console.error("Email sending failed:", emailError);
-      // Don't fail the request, just log it
+      console.error("Resend email sending failed:", emailError && emailError.message ? emailError.message : emailError);
+      // Fallback to SMTP using nodemailer if SMTP vars are present
+      try {
+        const nodemailer = require("nodemailer");
+        const smtpUser = process.env.EMAIL_USER;
+        const smtpPass = process.env.EMAIL_PASSWORD;
+        const smtpFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+
+        if (smtpUser && smtpPass) {
+          const transporter = nodemailer.createTransport({
+            service: process.env.EMAIL_SERVICE || "gmail",
+            auth: {
+              user: smtpUser,
+              pass: smtpPass,
+            },
+          });
+
+          const resetLink = `${FRONTEND_URL}/reset-password/${resetToken}`;
+
+          await transporter.sendMail({
+            from: smtpFrom,
+            to: email,
+            subject: "Reset Your Password",
+            html: `
+              <h2>Password Reset Request</h2>
+              <p>Click the link below to reset your password:</p>
+              <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                Reset Password
+              </a>
+              <p>This link expires in 1 hour.</p>
+              <p>If you didn't request this, please ignore this email.</p>
+            `,
+          });
+
+          console.log(`Reset email sent via SMTP to ${email}`);
+        } else {
+          console.error("SMTP credentials not provided; cannot send fallback email.");
+        }
+      } catch (smtpError) {
+        console.error("SMTP fallback failed:", smtpError);
+      }
     }
 
     res.json({ message: "If email exists, reset link has been sent" });

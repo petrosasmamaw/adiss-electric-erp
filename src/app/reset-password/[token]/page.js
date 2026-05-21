@@ -1,14 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 import { useResetPasswordMutation } from "@/lib/api/authApi";
 
 export default function ResetPasswordPage({ params }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const token = params?.token;
+  const { token } = useParams();
 
   const [resetPassword, { isLoading }] = useResetPasswordMutation();
 
