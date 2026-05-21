@@ -25,7 +25,14 @@ export default function ForgotPasswordPage() {
       setSubmitted(true);
       setEmail("");
     } catch (err) {
-      setError(err?.data?.error || "Failed to process request");
+      console.error('Forgot password error:', err);
+      const message =
+        err?.data?.error ||
+        err?.error?.data?.error ||
+        err?.error?.data ||
+        err?.message ||
+        JSON.stringify(err);
+      setError(message || "Failed to process request");
     }
   }
 
