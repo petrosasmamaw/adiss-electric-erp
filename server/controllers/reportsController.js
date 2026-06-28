@@ -22,13 +22,17 @@ async function getItemReports(req, res) {
     conditions.push(`ir.product_id = $${values.length}`);
   }
 
-  const rangeClause = getRangeClause(range);
+  const rangeClause = getRangeClause(range, "ir.created_at");
   if (rangeClause) {
     conditions.push(rangeClause.replace(/^AND\s+/, ""));
   }
 
   if (receiptFilter === "red_transactions") {
     conditions.push(`ir.receipt_mismatch = TRUE`);
+  } else if (receiptFilter === "buy") {
+    conditions.push(`ir.type IN ('buy', 'install_stock')`);
+  } else if (receiptFilter === "sell") {
+    conditions.push(`ir.type = 'sell'`);
   }
 
   const whereClause = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";

@@ -79,7 +79,7 @@ async function getFinanceReports(req, res) {
     conditions.push(`account_type = $${values.length}`);
   }
 
-  const rangeClause = getRangeClause(range);
+  const rangeClause = getRangeClause(range, "created_at");
   if (rangeClause) {
     conditions.push(rangeClause.replace(/^AND\s+/, ""));
   }

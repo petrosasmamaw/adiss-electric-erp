@@ -8,6 +8,13 @@ import DataTable from "@/components/DataTable";
 import { fetchProducts, fetchReports } from "@/lib/features/erpSlice";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
 
+function asCurrency(value) {
+  return `Rs ${Number(value || 0).toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+}
+
 export default function ReportsPage() {
   const dispatch = useDispatch();
   const { products, reports } = useSelector((state) => state.erp);
@@ -168,6 +175,8 @@ export default function ReportsPage() {
             onChange={(e) => setReceiptFilter(e.target.value)}
           >
             <option value="all">{t("reports.reportFilterAll")}</option>
+            <option value="buy">{t("reports.reportFilterBuy")}</option>
+            <option value="sell">{t("reports.reportFilterSell")}</option>
             <option value="red_transactions">{t("reports.redTransactions")}</option>
           </select>
         </div>
@@ -177,14 +186,30 @@ export default function ReportsPage() {
       <div className="grid gap-4 md:grid-cols-2">
         <Card variant="elevated" className="p-6 bg-gradient-to-br from-blue-50 to-blue-100/50">
           <p className="text-sm uppercase tracking-widest font-semibold text-slate-600">{t("reports.buyTransactions")}</p>
-          <p className="text-3xl font-bold text-blue-700 mt-2">{grouped.buy.length}</p>
-          <p className="text-xs text-slate-600 mt-2">{t("common.total")}: Rs {grouped.buyTotal.toFixed(2)}</p>
+          <div className="mt-3 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-bold tabular-nums text-blue-700">{grouped.buy.length}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">{t("reports.records")}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold tabular-nums text-blue-700 md:text-3xl">{asCurrency(grouped.buyTotal)}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">{t("reports.totalBuyAmount")}</p>
+            </div>
+          </div>
         </Card>
 
         <Card variant="elevated" className="p-6 bg-gradient-to-br from-emerald-50 to-emerald-100/50">
           <p className="text-sm uppercase tracking-widest font-semibold text-slate-600">{t("reports.sellTransactions")}</p>
-          <p className="text-3xl font-bold text-emerald-700 mt-2">{grouped.sell.length}</p>
-          <p className="text-xs text-slate-600 mt-2">{t("common.total")}: Rs {grouped.sellTotal.toFixed(2)}</p>
+          <div className="mt-3 flex items-end justify-between gap-4">
+            <div>
+              <p className="text-3xl font-bold tabular-nums text-emerald-700">{grouped.sell.length}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">{t("reports.records")}</p>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold tabular-nums text-emerald-700 md:text-3xl">{asCurrency(grouped.sellTotal)}</p>
+              <p className="mt-1 text-xs font-medium text-slate-500">{t("reports.totalSellAmount")}</p>
+            </div>
+          </div>
         </Card>
       </div>
 

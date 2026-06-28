@@ -22,7 +22,7 @@ function resolveEthiopianDate(row) {
 
 async function getTransactions(req, res) {
   const range = String(req.query.range || "all");
-  const rangeClause = getRangeClause(range);
+  const rangeClause = getRangeClause(range, "t.created_at");
 
   try {
     const { rows } = await getPool().query(

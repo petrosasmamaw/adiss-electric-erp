@@ -40,17 +40,17 @@ function parseBoolean(value, fallback = true) {
   return fallback;
 }
 
-function getRangeClause(range) {
+function getRangeClause(range, dateColumn = "created_at") {
   if (range === "today") {
-    return "AND ir.created_at::date = CURRENT_DATE";
+    return `AND ${dateColumn}::date = CURRENT_DATE`;
   }
 
   if (range === "7d") {
-    return "AND ir.created_at >= NOW() - INTERVAL '7 days'";
+    return `AND ${dateColumn} >= NOW() - INTERVAL '7 days'`;
   }
 
   if (range === "30d") {
-    return "AND ir.created_at >= NOW() - INTERVAL '30 days'";
+    return `AND ${dateColumn} >= NOW() - INTERVAL '30 days'`;
   }
 
   return "";
