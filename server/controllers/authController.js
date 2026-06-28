@@ -18,6 +18,109 @@ let FRONTEND_URL = _frontendUrls[0];
 if (!isProduction) {
   const localhostEntry = _frontendUrls.find(u => u.includes("localhost") || u.includes("127.0.0.1"));
   if (localhostEntry) FRONTEND_URL = localhostEntry;
+} else {
+  const productionEntry = _frontendUrls.find((u) => !u.includes("localhost") && !u.includes("127.0.0.1"));
+  if (productionEntry) FRONTEND_URL = productionEntry;
+}
+
+function buildResetEmailHtml(resetLink) {
+  return `
+    <h2>Password Reset Request</h2>
+    <p>Click the link below to reset your password:</p>
+    <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+      Reset Password
+    </a>
+    <p>This link expires in 1 hour.</p>
+    <p>If you didn't request this, please ignore this email.</p>
+  `;
+}
+
+async function sendResetPasswordEmail(email, resetLink) {
+  const html = buildResetEmailHtml(resetLink);
+  const resendApiKey = process.env.RESEND_API_KEY;
+  const smtpUser = process.env.EMAIL_USER;
+  const smtpPass = process.env.EMAIL_PASSWORD;
+  const smtpFrom = process.env.EMAIL_FROM || smtpUser;
+  const smtpService = process.env.EMAIL_SERVICE || "gmail";
+
+  async function tryResend() {
+    if (!resendApiKey) {
+      return false;
+    }
+
+    const { Resend } = require("resend");
+    const resend = new Resend(resendApiKey);
+    const resendFrom = process.env.RESEND_FROM || "Electric ERP <onboarding@resend.dev>";
+
+    const result = await resend.emails.send({
+      from: resendFrom,
+      to: email,
+      subject: "Reset Your Password",
+      html,
+    });
+
+    if (result?.error) {
+      throw new Error(result.error.message);
+    }
+
+    console.log(`Reset email sent via Resend to ${email}`);
+    return true;
+  }
+
+  async function trySmtp() {
+    if (!smtpUser || !smtpPass) {
+      return false;
+    }
+
+    const nodemailer = require("nodemailer");
+    const transporter = nodemailer.createTransport({
+      service: smtpService,
+      auth: { user: smtpUser, pass: smtpPass },
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 12000,
+    });
+
+    await transporter.sendMail({
+      from: smtpFrom,
+      to: email,
+      subject: "Reset Your Password",
+      html,
+    });
+
+    console.log(`Reset email sent via SMTP to ${email}`);
+    return true;
+  }
+
+  // Render and most PaaS hosts block outbound SMTP; use Resend (HTTPS) in production.
+  if (isProduction) {
+    try {
+      if (await tryResend()) {
+        return;
+      }
+    } catch (error) {
+      console.error("Resend send failed in production:", error?.message || error);
+    }
+
+    console.error(
+      `Failed to send reset email to ${email} in production. Set RESEND_API_KEY and RESEND_FROM on the server.`
+    );
+    return;
+  }
+
+  try {
+    if (await trySmtp()) {
+      return;
+    }
+  } catch (error) {
+    console.error("SMTP send failed, trying Resend:", error?.message || error);
+  }
+
+  try {
+    await tryResend();
+  } catch (error) {
+    console.error("Resend fallback failed:", error?.message || error);
+  }
 }
 
 async function login(req, res) {
@@ -136,107 +239,15 @@ async function forgotPassword(req, res) {
       [hashedToken, expiresAt, user.id]
     );
 
-    // Send email with reset link
-    const nodemailer = require("nodemailer");
-    const smtpUser = process.env.EMAIL_USER;
-    const smtpPass = process.env.EMAIL_PASSWORD;
-    const smtpFrom = process.env.EMAIL_FROM || process.env.EMAIL_USER;
-    const smtpService = process.env.EMAIL_SERVICE || "gmail";
-
     const resetLink = `${FRONTEND_URL}/reset-password/${resetToken}`;
     console.log(`Reset link: ${resetLink}`);
 
-    // If SMTP credentials exist, prefer SMTP (faster and reliable for gmail users)
-    if (smtpUser && smtpPass) {
-      try {
-        const transporter = nodemailer.createTransport({
-          service: smtpService,
-          auth: { user: smtpUser, pass: smtpPass },
-        });
-
-        await transporter.sendMail({
-          from: smtpFrom,
-          to: email,
-          subject: "Reset Your Password",
-          html: `
-            <h2>Password Reset Request</h2>
-            <p>Click the link below to reset your password:</p>
-            <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Reset Password
-            </a>
-            <p>This link expires in 1 hour.</p>
-            <p>If you didn't request this, please ignore this email.</p>
-          `,
-        });
-
-        console.log(`Reset email sent via SMTP to ${email}`);
-      } catch (smtpError) {
-        console.error("SMTP send failed, will try Resend if available:", smtpError && smtpError.message ? smtpError.message : smtpError);
-        // fall through to try Resend
-        try {
-          const { Resend } = require("resend");
-          const resend = new Resend(process.env.RESEND_API_KEY);
-          const resendFrom = process.env.RESEND_FROM || smtpFrom || "onboarding@resend.dev";
-
-          const resendResult = await resend.emails.send({
-            from: resendFrom,
-            to: email,
-            subject: "Reset Your Password",
-            html: `
-              <h2>Password Reset Request</h2>
-              <p>Click the link below to reset your password:</p>
-              <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                Reset Password
-              </a>
-              <p>This link expires in 1 hour.</p>
-              <p>If you didn't request this, please ignore this email.</p>
-            `,
-          });
-
-          console.log(`Resend response:`, resendResult);
-          if (resendResult && resendResult.error) {
-            console.error(`Resend reported error: ${resendResult.error.message}`);
-          } else {
-            console.log(`Reset email sent via Resend (from ${resendFrom}) to ${email}`);
-          }
-        } catch (resendErr) {
-          console.error("Resend fallback also failed:", resendErr && resendErr.message ? resendErr.message : resendErr);
-        }
-      }
-    } else {
-      // No SMTP creds — try Resend (may fail if domain not verified)
-      try {
-        const { Resend } = require("resend");
-        const resend = new Resend(process.env.RESEND_API_KEY);
-        const resendFrom = process.env.RESEND_FROM || smtpFrom || process.env.EMAIL_USER || "onboarding@resend.dev";
-
-        const resendResult = await resend.emails.send({
-          from: resendFrom,
-          to: email,
-          subject: "Reset Your Password",
-          html: `
-            <h2>Password Reset Request</h2>
-            <p>Click the link below to reset your password:</p>
-            <a href="${resetLink}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Reset Password
-            </a>
-            <p>This link expires in 1 hour.</p>
-            <p>If you didn't request this, please ignore this email.</p>
-          `,
-        });
-
-        console.log(`Resend response:`, resendResult);
-        if (resendResult && resendResult.error) {
-          console.error(`Resend reported error: ${resendResult.error.message}`);
-        } else {
-          console.log(`Reset email sent via Resend (from ${resendFrom}) to ${email}`);
-        }
-      } catch (emailError) {
-        console.error("Resend email sending failed and no SMTP configured:", emailError && emailError.message ? emailError.message : emailError);
-      }
-    }
-
+    // Respond immediately — SMTP on PaaS hosts (e.g. Render) can hang and cause client timeouts.
     res.json({ message: "If email exists, reset link has been sent" });
+
+    sendResetPasswordEmail(email, resetLink).catch((error) => {
+      console.error("Background reset email error:", error?.message || error);
+    });
   } catch (error) {
     console.error("Forgot password error:", error);
     res.status(500).json({ error: "Failed to process forgot password" });
