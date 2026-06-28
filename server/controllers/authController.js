@@ -35,92 +35,146 @@ function buildResetEmailHtml(resetLink) {
   `;
 }
 
-async function sendResetPasswordEmail(email, resetLink) {
-  const html = buildResetEmailHtml(resetLink);
+async function tryBrevoSend(email, html) {
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.EMAIL_FROM || process.env.EMAIL_USER;
+
+  if (!apiKey || !fromEmail) {
+    return false;
+  }
+
+  const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: {
+        email: fromEmail,
+        name: process.env.EMAIL_FROM_NAME || "Electric ERP",
+      },
+      to: [{ email }],
+      subject: "Reset Your Password",
+      htmlContent: html,
+    }),
+  });
+
+  const body = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(body.message || `Brevo send failed (${response.status})`);
+  }
+
+  console.log(`Reset email sent via Brevo to ${email}`);
+  return true;
+}
+
+async function tryResendSend(email, html) {
   const resendApiKey = process.env.RESEND_API_KEY;
+
+  if (!resendApiKey) {
+    return false;
+  }
+
+  const { Resend } = require("resend");
+  const resend = new Resend(resendApiKey);
+  const resendFrom = process.env.RESEND_FROM || "Electric ERP <onboarding@resend.dev>";
+
+  const result = await resend.emails.send({
+    from: resendFrom,
+    to: email,
+    subject: "Reset Your Password",
+    html,
+  });
+
+  if (result?.error) {
+    throw new Error(result.error.message);
+  }
+
+  console.log(`Reset email sent via Resend to ${email}`);
+  return true;
+}
+
+async function trySmtpSend(email, html) {
   const smtpUser = process.env.EMAIL_USER;
   const smtpPass = process.env.EMAIL_PASSWORD;
   const smtpFrom = process.env.EMAIL_FROM || smtpUser;
   const smtpService = process.env.EMAIL_SERVICE || "gmail";
 
-  async function tryResend() {
-    if (!resendApiKey) {
-      return false;
-    }
-
-    const { Resend } = require("resend");
-    const resend = new Resend(resendApiKey);
-    const resendFrom = process.env.RESEND_FROM || "Electric ERP <onboarding@resend.dev>";
-
-    const result = await resend.emails.send({
-      from: resendFrom,
-      to: email,
-      subject: "Reset Your Password",
-      html,
-    });
-
-    if (result?.error) {
-      throw new Error(result.error.message);
-    }
-
-    console.log(`Reset email sent via Resend to ${email}`);
-    return true;
+  if (!smtpUser || !smtpPass) {
+    return false;
   }
 
-  async function trySmtp() {
-    if (!smtpUser || !smtpPass) {
-      return false;
-    }
+  const nodemailer = require("nodemailer");
+  const transporter = nodemailer.createTransport({
+    service: smtpService,
+    auth: { user: smtpUser, pass: smtpPass },
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 12000,
+  });
 
-    const nodemailer = require("nodemailer");
-    const transporter = nodemailer.createTransport({
-      service: smtpService,
-      auth: { user: smtpUser, pass: smtpPass },
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 12000,
-    });
+  await transporter.sendMail({
+    from: smtpFrom,
+    to: email,
+    subject: "Reset Your Password",
+    html,
+  });
 
-    await transporter.sendMail({
-      from: smtpFrom,
-      to: email,
-      subject: "Reset Your Password",
-      html,
-    });
+  console.log(`Reset email sent via SMTP to ${email}`);
+  return true;
+}
 
-    console.log(`Reset email sent via SMTP to ${email}`);
-    return true;
-  }
+async function sendResetPasswordEmail(email, resetLink) {
+  const html = buildResetEmailHtml(resetLink);
+  const failures = [];
 
-  // Render and most PaaS hosts block outbound SMTP; use Resend (HTTPS) in production.
-  if (isProduction) {
+  async function attempt(label, fn) {
     try {
-      if (await tryResend()) {
-        return;
+      if (await fn()) {
+        return true;
       }
     } catch (error) {
-      console.error("Resend send failed in production:", error?.message || error);
+      const message = error?.message || String(error);
+      failures.push(`${label}: ${message}`);
+      console.error(`${label} send failed:`, message);
     }
 
-    console.error(
-      `Failed to send reset email to ${email} in production. Set RESEND_API_KEY and RESEND_FROM on the server.`
-    );
+    return false;
+  }
+
+  if (isProduction) {
+    // Render blocks Gmail SMTP. Use HTTPS email APIs in production.
+    if (await attempt("Brevo", () => tryBrevoSend(email, html))) {
+      return;
+    }
+
+    if (await attempt("Resend", () => tryResendSend(email, html))) {
+      return;
+    }
+
+    const detail = failures.length
+      ? failures.join("; ")
+      : "Configure BREVO_API_KEY (recommended for Gmail) or RESEND_API_KEY with a verified domain";
+
+    throw new Error(detail);
+  }
+
+  if (await attempt("SMTP", () => trySmtpSend(email, html))) {
     return;
   }
 
-  try {
-    if (await trySmtp()) {
-      return;
-    }
-  } catch (error) {
-    console.error("SMTP send failed, trying Resend:", error?.message || error);
+  if (await attempt("Brevo", () => tryBrevoSend(email, html))) {
+    return;
   }
 
-  try {
-    await tryResend();
-  } catch (error) {
-    console.error("Resend fallback failed:", error?.message || error);
+  if (await attempt("Resend", () => tryResendSend(email, html))) {
+    return;
   }
+
+  throw new Error(failures.join("; ") || "No email provider configured");
 }
 
 async function login(req, res) {
@@ -242,12 +296,16 @@ async function forgotPassword(req, res) {
     const resetLink = `${FRONTEND_URL}/reset-password/${resetToken}`;
     console.log(`Reset link: ${resetLink}`);
 
-    // Respond immediately — SMTP on PaaS hosts (e.g. Render) can hang and cause client timeouts.
-    res.json({ message: "If email exists, reset link has been sent" });
+    try {
+      await sendResetPasswordEmail(email, resetLink);
+    } catch (emailError) {
+      console.error("Reset email delivery failed:", emailError?.message || emailError);
+      return res.status(503).json({
+        error: "Unable to send reset email. Please try again later or contact support.",
+      });
+    }
 
-    sendResetPasswordEmail(email, resetLink).catch((error) => {
-      console.error("Background reset email error:", error?.message || error);
-    });
+    res.json({ message: "If email exists, reset link has been sent" });
   } catch (error) {
     console.error("Forgot password error:", error);
     res.status(500).json({ error: "Failed to process forgot password" });
