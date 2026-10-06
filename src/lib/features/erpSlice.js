@@ -61,29 +61,58 @@ export const sellProduct = createAsyncThunk("erp/sellProduct", async ({ productI
   return true;
 });
 
-export const fetchReports = createAsyncThunk("erp/fetchReports", async ({ productId = "", range = "all", receiptFilter = "all" } = {}) => {
-  const params = new URLSearchParams();
-  if (productId) {
-    params.set("productId", String(productId));
-  }
-  if (range && range !== "all") {
-    params.set("range", range);
-  }
-  if (receiptFilter && receiptFilter !== "all") {
-    params.set("receiptFilter", receiptFilter);
-  }
+export const fetchReports = createAsyncThunk(
+  "erp/fetchReports",
+  async ({ productId = "", range = "all", receiptFilter = "all", startDate = "", endDate = "" } = {}) => {
+    const params = new URLSearchParams();
+    if (productId) {
+      params.set("productId", String(productId));
+    }
+    if (range && range !== "all") {
+      params.set("range", range);
+    }
+    if (receiptFilter && receiptFilter !== "all") {
+      params.set("receiptFilter", receiptFilter);
+    }
+    if (startDate) {
+      params.set("startDate", startDate);
+    }
+    if (endDate) {
+      params.set("endDate", endDate);
+    }
 
-  const query = params.toString();
-  return apiRequest(`/item-reports${query ? `?${query}` : ""}`);
-});
+    const query = params.toString();
+    return apiRequest(`/item-reports${query ? `?${query}` : ""}`);
+  }
+);
 
-export const fetchTransactions = createAsyncThunk("erp/fetchTransactions", async (range = "all") => {
-  const query = range && range !== "all" ? `?range=${range}` : "";
+export const fetchTransactions = createAsyncThunk("erp/fetchTransactions", async (arg = "all") => {
+  let query = "";
+  if (typeof arg === "string") {
+    query = arg && arg !== "all" ? `?range=${arg}` : "";
+  } else if (typeof arg === "object" && arg !== null) {
+    const params = new URLSearchParams();
+    if (arg.range && arg.range !== "all") params.set("range", arg.range);
+    if (arg.startDate) params.set("startDate", arg.startDate);
+    if (arg.endDate) params.set("endDate", arg.endDate);
+    const qs = params.toString();
+    if (qs) query = `?${qs}`;
+  }
   return apiRequest(`/transactions${query}`);
 });
 
-export const fetchDashboard = createAsyncThunk("erp/fetchDashboard", async (range = "all") => {
-  const query = range && range !== "all" ? `?range=${range}` : "";
+export const fetchDashboard = createAsyncThunk("erp/fetchDashboard", async (arg = "all") => {
+  let query = "";
+  if (typeof arg === "string") {
+    query = arg && arg !== "all" ? `?range=${arg}` : "";
+  } else if (typeof arg === "object" && arg !== null) {
+    const params = new URLSearchParams();
+    if (arg.range && arg.range !== "all") params.set("range", arg.range);
+    if (arg.startDate) params.set("startDate", arg.startDate);
+    if (arg.endDate) params.set("endDate", arg.endDate);
+    const qs = params.toString();
+    if (qs) query = `?${qs}`;
+  }
   return apiRequest(`/dashboard${query}`);
 });
 
@@ -93,13 +122,19 @@ export const fetchFinanceSummary = createAsyncThunk("erp/fetchFinanceSummary", a
 
 export const fetchFinanceReports = createAsyncThunk(
   "erp/fetchFinanceReports",
-  async ({ range = "all", account = "" } = {}) => {
+  async ({ range = "all", account = "", startDate = "", endDate = "" } = {}) => {
     const params = new URLSearchParams();
     if (range && range !== "all") {
       params.set("range", range);
     }
     if (account) {
       params.set("account", account);
+    }
+    if (startDate) {
+      params.set("startDate", startDate);
+    }
+    if (endDate) {
+      params.set("endDate", endDate);
     }
 
     const query = params.toString();

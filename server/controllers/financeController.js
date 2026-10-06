@@ -71,6 +71,8 @@ async function getFinanceSummary(_req, res) {
 async function getFinanceReports(req, res) {
   const range = String(req.query.range || "all");
   const account = String(req.query.account || "").trim().toLowerCase();
+  const startDate = req.query.startDate ? String(req.query.startDate).trim() : null;
+  const endDate = req.query.endDate ? String(req.query.endDate).trim() : null;
   const values = [];
   const conditions = [];
 
@@ -79,7 +81,7 @@ async function getFinanceReports(req, res) {
     conditions.push(`account_type = $${values.length}`);
   }
 
-  const rangeClause = getRangeClause(range, "created_at");
+  const rangeClause = getRangeClause(range, "created_at", startDate, endDate);
   if (rangeClause) {
     conditions.push(rangeClause.replace(/^AND\s+/, ""));
   }

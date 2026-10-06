@@ -345,6 +345,7 @@ export default function BalancePage() {
               <option value="today">{t("reports.today")}</option>
               <option value="7d">{t("reports.sevenDays")}</option>
               <option value="30d">{t("reports.thirtyDays")}</option>
+              <option value="90d">{t("reports.threeMonths")}</option>
             </select>
 
             <select

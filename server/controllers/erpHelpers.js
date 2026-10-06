@@ -40,7 +40,7 @@ function parseBoolean(value, fallback = true) {
   return fallback;
 }
 
-function getRangeClause(range, dateColumn = "created_at") {
+function getRangeClause(range, dateColumn = "created_at", startDate = null, endDate = null) {
   if (range === "today") {
     return `AND ${dateColumn}::date = CURRENT_DATE`;
   }
@@ -49,8 +49,38 @@ function getRangeClause(range, dateColumn = "created_at") {
     return `AND ${dateColumn} >= NOW() - INTERVAL '7 days'`;
   }
 
-  if (range === "30d") {
+  if (range === "30d" || range === "1m") {
     return `AND ${dateColumn} >= NOW() - INTERVAL '30 days'`;
+  }
+
+  if (range === "90d" || range === "3m" || range === "3month" || range === "3months") {
+    return `AND ${dateColumn} >= NOW() - INTERVAL '90 days'`;
+  }
+
+  if (range === "custom" || range === "range" || (!range && (startDate || endDate))) {
+    const parts = [];
+    if (startDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+      parts.push(`${dateColumn}::date >= '${startDate}'::date`);
+    }
+    if (endDate && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      parts.push(`${dateColumn}::date <= '${endDate}'::date`);
+    }
+    if (parts.length > 0) {
+      return `AND ${parts.join(" AND ")}`;
+    }
+  }
+
+  if (startDate || endDate) {
+    const parts = [];
+    if (startDate && /^\d{4}-\d{2}-\d{2}$/.test(startDate)) {
+      parts.push(`${dateColumn}::date >= '${startDate}'::date`);
+    }
+    if (endDate && /^\d{4}-\d{2}-\d{2}$/.test(endDate)) {
+      parts.push(`${dateColumn}::date <= '${endDate}'::date`);
+    }
+    if (parts.length > 0) {
+      return `AND ${parts.join(" AND ")}`;
+    }
   }
 
   return "";

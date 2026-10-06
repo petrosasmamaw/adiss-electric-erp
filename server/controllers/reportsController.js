@@ -13,6 +13,8 @@ async function getItemReports(req, res) {
   const productId = Number(req.query.productId);
   const range = String(req.query.range || "all");
   const receiptFilter = String(req.query.receiptFilter || "all");
+  const startDate = req.query.startDate ? String(req.query.startDate).trim() : null;
+  const endDate = req.query.endDate ? String(req.query.endDate).trim() : null;
 
   const values = [];
   const conditions = [];
@@ -22,7 +24,7 @@ async function getItemReports(req, res) {
     conditions.push(`ir.product_id = $${values.length}`);
   }
 
-  const rangeClause = getRangeClause(range, "ir.created_at");
+  const rangeClause = getRangeClause(range, "ir.created_at", startDate, endDate);
   if (rangeClause) {
     conditions.push(rangeClause.replace(/^AND\s+/, ""));
   }

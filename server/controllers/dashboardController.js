@@ -2,7 +2,9 @@ const { getPool, getRangeClause } = require("./erpHelpers");
 
 async function getDashboard(req, res) {
   const range = String(req.query.range || "all");
-  const rangeClause = getRangeClause(range, "created_at");
+  const startDate = req.query.startDate ? String(req.query.startDate).trim() : null;
+  const endDate = req.query.endDate ? String(req.query.endDate).trim() : null;
+  const rangeClause = getRangeClause(range, "created_at", startDate, endDate);
 
   try {
     const salesResult = await getPool().query(

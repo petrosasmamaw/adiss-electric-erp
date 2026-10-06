@@ -123,6 +123,7 @@ export default function DashboardPage() {
           <option value="today">{t("common.today")}</option>
           <option value="7d">{t("common.last7Days")}</option>
           <option value="30d">{t("common.last30Days")}</option>
+          <option value="90d">{t("common.last90Days")}</option>
         </select>
       </div>
 

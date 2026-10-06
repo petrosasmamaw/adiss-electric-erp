@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Calendar } from "lucide-react";
 import Card from "@/components/Card";
 import SectionHeader from "@/components/SectionHeader";
 import DataTable from "@/components/DataTable";
@@ -22,14 +23,28 @@ export default function ReportsPage() {
   const [productId, setProductId] = useState("");
   const [range, setRange] = useState("all");
   const [receiptFilter, setReceiptFilter] = useState("all");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   useEffect(() => {
     dispatch(fetchProducts());
   }, [dispatch]);
 
   useEffect(() => {
-    dispatch(fetchReports({ productId, range, receiptFilter }));
-  }, [dispatch, productId, range, receiptFilter]);
+    if (range === "custom") {
+      dispatch(fetchReports({ productId, range, receiptFilter, startDate, endDate }));
+    } else {
+      dispatch(fetchReports({ productId, range, receiptFilter }));
+    }
+  }, [dispatch, productId, range, receiptFilter, startDate, endDate]);
+
+  const handleRangeChange = (newRange) => {
+    setRange(newRange);
+    if (newRange !== "custom") {
+      setStartDate("");
+      setEndDate("");
+    }
+  };
 
   const grouped = useMemo(() => {
     const buy = reports.filter((r) => r.type === "buy" || r.type === "install_stock");
@@ -136,50 +151,100 @@ export default function ReportsPage() {
       </div>
 
       {/* Filters */}
-      <Card variant="elevated" className="p-3 md:p-6 flex flex-col gap-3 md:gap-4 md:flex-row md:items-end">
-        <div className="w-full flex-1">
-          <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.filterByProduct")}</label>
-          <select
-            className="w-full px-3 md:px-4 py-2 md:py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900 text-sm"
-            value={productId}
-            onChange={(e) => setProductId(e.target.value)}
-          >
-            <option value="">{t("reports.allProducts")}</option>
-            {products.map((product) => (
-              <option key={product.id} value={product.id}>
-                {product.name} ({product.category})
-              </option>
-            ))}
-          </select>
+      <Card variant="elevated" className="p-3 md:p-6 space-y-4">
+        <div className="flex flex-col gap-3 md:gap-4 md:flex-row md:items-end">
+          <div className="w-full flex-1">
+            <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.filterByProduct")}</label>
+            <select
+              className="w-full px-3 md:px-4 py-2 md:py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900 text-sm"
+              value={productId}
+              onChange={(e) => setProductId(e.target.value)}
+            >
+              <option value="">{t("reports.allProducts")}</option>
+              {products.map((product) => (
+                <option key={product.id} value={product.id}>
+                  {product.name} ({product.category})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="w-full md:w-auto">
+            <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.timeRange")}</label>
+            <select
+              className="w-full px-3 md:px-4 py-2 md:py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900 text-sm"
+              value={range}
+              onChange={(e) => handleRangeChange(e.target.value)}
+            >
+              <option value="all">{t("reports.allTime")}</option>
+              <option value="today">{t("reports.today")}</option>
+              <option value="7d">{t("reports.sevenDays")}</option>
+              <option value="30d">{t("reports.thirtyDays")}</option>
+              <option value="90d">{t("reports.threeMonths")}</option>
+              <option value="custom">{t("reports.customRange")}</option>
+            </select>
+          </div>
+
+          <div className="w-full md:w-auto">
+            <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.reportFilterLabel")}</label>
+            <select
+              className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900 text-sm w-full md:w-auto"
+              value={receiptFilter}
+              onChange={(e) => setReceiptFilter(e.target.value)}
+            >
+              <option value="all">{t("reports.reportFilterAll")}</option>
+              <option value="buy">{t("reports.reportFilterBuy")}</option>
+              <option value="sell">{t("reports.reportFilterSell")}</option>
+              <option value="red_transactions">{t("reports.redTransactions")}</option>
+            </select>
+          </div>
         </div>
 
-        <div className="w-full md:w-auto">
-          <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.timeRange")}</label>
-          <select
-            className="w-full px-3 md:px-4 py-2 md:py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900 text-sm"
-            value={range}
-            onChange={(e) => setRange(e.target.value)}
-          >
-            <option value="all">{t("reports.allTime")}</option>
-            <option value="today">{t("reports.today")}</option>
-            <option value="7d">{t("reports.sevenDays")}</option>
-            <option value="30d">{t("reports.thirtyDays")}</option>
-          </select>
-        </div>
+        {/* Custom Date Range Picker */}
+        {range === "custom" && (
+          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-stretch sm:items-end gap-3 sm:gap-4">
+            <div className="flex-1 sm:max-w-xs">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 mb-1.5">
+                <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                {t("reports.startDate")}
+              </label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-800 text-sm shadow-sm"
+                value={startDate}
+                max={endDate || undefined}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </div>
 
-        <div className="w-full md:w-auto">
-          <label className="block text-xs md:text-sm font-medium text-slate-700 mb-2">{t("reports.reportFilterLabel")}</label>
-          <select
-            className="px-4 py-2.5 rounded-xl border border-slate-200 bg-white/50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-900"
-            value={receiptFilter}
-            onChange={(e) => setReceiptFilter(e.target.value)}
-          >
-            <option value="all">{t("reports.reportFilterAll")}</option>
-            <option value="buy">{t("reports.reportFilterBuy")}</option>
-            <option value="sell">{t("reports.reportFilterSell")}</option>
-            <option value="red_transactions">{t("reports.redTransactions")}</option>
-          </select>
-        </div>
+            <div className="flex-1 sm:max-w-xs">
+              <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 mb-1.5">
+                <Calendar className="w-3.5 h-3.5 text-blue-500" />
+                {t("reports.endDate")}
+              </label>
+              <input
+                type="date"
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all font-medium text-slate-800 text-sm shadow-sm"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </div>
+
+            {(startDate || endDate) && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                }}
+                className="px-3 py-2 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 rounded-lg transition-colors border border-rose-200/60 self-start sm:self-end"
+              >
+                {t("reports.clearDates")}
+              </button>
+            )}
+          </div>
+        )}
       </Card>
 
       {/* Summary Cards */}
